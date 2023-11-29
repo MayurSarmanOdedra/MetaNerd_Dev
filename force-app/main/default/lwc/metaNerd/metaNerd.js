@@ -35,7 +35,7 @@ export default class MetaNerd extends LightningElement {
             if(this.selectedOptionValues.includes('customFieldsOnly')){
                 const customFieldsData = this.recordsData.filter((element) => element.isCustom);
                 return customFieldsData;
-            }else if(this.selectedOptionValues.includes('unusedFieldsOnly')){
+            }else if(this.selectedOptionValues.includes('unusedCustomFieldsOnly')){
                 //call apex 
                 //
             }

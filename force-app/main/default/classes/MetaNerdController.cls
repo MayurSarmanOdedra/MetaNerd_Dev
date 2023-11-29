@@ -102,21 +102,26 @@ public with sharing class MetaNerdController {
             }
 
             //Query the field definition tooling api
-            List<String> modifiedApiNamesForQuery = new List<String>();
+            Map<String,String> apiNamesWithUnderscoreByWithoutUnderscore = new Map<String, String>();
+            String modifiedApiNamesForQuery = '';
             for(String apiName : fieldMapByDeveloperName.keySet()){
-                modifiedApiNamesForQuery.add('\'' + apiName + '\'');
-                System.debug('\'' + apiName + '\'');
+                if(fieldMapByDeveloperName.get(apiName).isCustom){
+                    String apiNameWithoutUnderscore = apiName.replace('__c', '');
+                    apiNamesWithUnderscoreByWithoutUnderscore.put(apiNameWithoutUnderscore, apiName);
+                    modifiedApiNamesForQuery += '\'' + apiNameWithoutUnderscore + '\',';
+                }
             }
-            String query = 'SELECT Id,DeveloperName FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = \'' + sObjectName + '\' AND DeveloperName IN ' + modifiedApiNamesForQuery;
+            modifiedApiNamesForQuery = modifiedApiNamesForQuery.removeEnd(',');
+            String query = 'SELECT Id,DeveloperName FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = \'' + sObjectName + '\' AND DeveloperName IN (' + modifiedApiNamesForQuery + ')';
             system.debug('Query::'+query);
             HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
             System.debug(response.getBody());
             ToolingJSONResponse toolingRes = (ToolingJSONResponse) JSON.deserializeStrict(response.getBody(), ToolingJSONResponse.class);
             if(toolingRes.size > 0 && toolingRes.records.size() > 0){
                 for (Record rec : toolingRes.records) {
-                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(rec.DeveloperName);
+                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName));
                     currentFieldInfo.fieldId = rec.Id;
-                    fieldMapByDeveloperName.put(rec.DeveloperName, currentFieldInfo);
+                    fieldMapByDeveloperName.put(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName), currentFieldInfo);
                 }
             }
 
