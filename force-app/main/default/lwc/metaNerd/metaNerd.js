@@ -1,6 +1,7 @@
 import { LightningElement, wire } from 'lwc';
 import getSObjectInfo from '@salesforce/apex/MetaNerdController.getSObjectInfo';
 import getFieldInfo from '@salesforce/apex/MetaNerdController.getFieldInfo';
+import getFieldsReferences from '@salesforce/apex/MetaNerdController.getFieldsReferences';
 import { fieldColumns, selectionOptions } from './util';
 
 
@@ -34,7 +35,11 @@ export default class MetaNerd extends LightningElement {
             if(this.selectedOptionValues.includes('customFieldsOnly')){
                 const customFieldsData = this.recordsData.filter((element) => element.isCustom);
                 return customFieldsData;
+            }else if(this.selectedOptionValues.includes('unusedFieldsOnly')){
+                //call apex 
+                //
             }
+            console.table(this.recordsData);
             return [...this.recordsData];
         }
     }

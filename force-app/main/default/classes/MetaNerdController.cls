@@ -14,6 +14,8 @@ public with sharing class MetaNerdController {
 
     public class FieldInfo {
         @AuraEnabled
+        public Id fieldId { get; set; }
+        @AuraEnabled
         public String apiName { get; set; }
         @AuraEnabled
         public String label { get; set; }
@@ -25,6 +27,39 @@ public with sharing class MetaNerdController {
             this.label = label;
             this.isCustom = isCustom;
         }
+
+        public void setFieldId(Id fieldId){
+            this.fieldId = fieldId;
+        }
+    }
+
+    public class ToolingJSONResponse {
+        public Integer size;
+        public Integer totalSize;
+        public Boolean done;
+        public String entityTypeName;
+        public Object queryLocator;
+        public List<Record> records;
+    }
+
+    public class Record {
+        public String Id;
+        public String DeveloperName;
+        public Attributes attributes;
+    }
+
+    public class Attributes {
+		public String type; // in json: type
+		public String url;
+    }
+
+    public class FieldReferencesInfo {
+        @AuraEnabled
+        public String fieldId { get; set; }
+        @AuraEnabled
+        public Boolean hasReferences { get; set; }
+        @AuraEnabled
+        public List<String> fieldReferences { get; set; }
     }
     
     @AuraEnabled(cacheable=true)
@@ -48,7 +83,7 @@ public with sharing class MetaNerdController {
 
     @AuraEnabled(cacheable=true)
     public static List<FieldInfo> getFieldInfo(String sObjectName) {
-        List<FieldInfo> fieldList = new List<FieldInfo>();
+        Map<String, FieldInfo> fieldMapByDeveloperName = new Map<String, FieldInfo>();
         
         Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(sObjectName);
         if (sObjectType != null) {
@@ -61,12 +96,44 @@ public with sharing class MetaNerdController {
                 String label = field.getLabel();
                 Boolean isCustom = field.isCustom();
                 
+                //Add to field info
                 FieldInfo fieldInfo = new FieldInfo(apiName, label, isCustom);
-                fieldList.add(fieldInfo);
+                fieldMapByDeveloperName.put(apiName, fieldInfo);
             }
+
+            //Query the field definition tooling api
+            List<String> modifiedApiNamesForQuery = new List<String>();
+            for(String apiName : fieldMapByDeveloperName.keySet()){
+                modifiedApiNamesForQuery.add('\'' + apiName + '\'');
+                System.debug('\'' + apiName + '\'');
+            }
+            String query = 'SELECT Id,DeveloperName FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = \'' + sObjectName + '\' AND DeveloperName IN ' + modifiedApiNamesForQuery;
+            system.debug('Query::'+query);
+            HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
+            System.debug(response.getBody());
+            ToolingJSONResponse toolingRes = (ToolingJSONResponse) JSON.deserializeStrict(response.getBody(), ToolingJSONResponse.class);
+            if(toolingRes.size > 0 && toolingRes.records.size() > 0){
+                for (Record rec : toolingRes.records) {
+                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(rec.DeveloperName);
+                    currentFieldInfo.fieldId = rec.Id;
+                    fieldMapByDeveloperName.put(rec.DeveloperName, currentFieldInfo);
+                }
+            }
+
         }
         
-        System.debug('fields ::: ' + fieldList.toString());
-        return fieldList;
+        return fieldMapByDeveloperName.values();
+    }
+
+    private static Map<String, FieldReferencesInfo> extractFieldReferencesFromJSON(String jsonOutput){
+        //Fiele reference map => i.e. 'refComponentName', 'Layout-Account Layout, ...'
+        Map<String, FieldReferencesInfo> fieldReferenceMap = new Map<String, FieldReferencesInfo>();
+        return fieldReferenceMap;
+    }
+
+    @AuraEnabled
+    public static void getFieldsReferences(List<Id> fieldIds){
+        String query = 'SELECT MetadataComponentType, MetadataComponentName, RefMetadataComponentName, RefMetadataComponentId FROM MetadataComponentDependency WHERE RefMetadataComponentId IN ' + fieldIds;
+        ToolingAPIUtility.queryToolingAPI(query);
     }
 }

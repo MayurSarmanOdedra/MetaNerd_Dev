@@ -15,6 +15,10 @@ const selectionOptions = [
     {
         label: 'Show custom fields only',
         value: 'customFieldsOnly'
+    },
+    {
+        label: 'Show unused fields only',
+        value: 'unusedFieldsOnly'
     }
 ];
 
