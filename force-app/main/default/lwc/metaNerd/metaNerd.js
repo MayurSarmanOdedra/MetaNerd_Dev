@@ -32,15 +32,21 @@ export default class MetaNerd extends LightningElement {
     //Get Data
     get data(){
         if(this.isSObjectSelected && this.columns){
+            let filteredRecordsData = [...this.recordsData];
             if(this.selectedOptionValues.includes('customFieldsOnly')){
-                const customFieldsData = this.recordsData.filter((element) => element.isCustom);
-                return customFieldsData;
+                filteredRecordsData = this.recordsData.filter((element) => element.isCustom);
             }else if(this.selectedOptionValues.includes('unusedCustomFieldsOnly')){
-                //call apex 
-                //
+                //let filteredWithIds = this.recordsData.filter((element) => element.fieldId != undefined).map(ele => ele.fieldId)
+                let filteredWithIds = this.recordsData.flatMap((element) => element.fieldId != undefined ? element.fieldId : [])
+                getFieldsReferences({
+                    fieldIds: filteredWithIds
+                }).then((result) => {
+                    filteredRecordsData = this.recordsData.filter((element) => result.includes(element.fieldId));
+                }).catch((error) => {
+                    console.log('Error occured when retrieving field metadata references ::: ' + JSON.stringify(error));
+                })
             }
-            console.table(this.recordsData);
-            return [...this.recordsData];
+            return filteredRecordsData;
         }
     }
 
