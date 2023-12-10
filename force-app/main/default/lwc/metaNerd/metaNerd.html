@@ -27,12 +27,13 @@
                 <div class="slds-var-m-top_small">
                   <div class="slds-var-p-bottom_medium">
                     <p>
-                      <lightning-checkbox-group name="Checkbox Group"
+                      <lightning-radio-group name="Checkbox Group"
                                     label="Select Options"
                                     options={selectOptions}
                                     value={selectedOptionValues}
+                                    type="radio"
                                     onchange={handleSelectOptionChange}
-                                    class="slds-show_inline"></lightning-checkbox-group>
+                                    class="slds-show_inline"></lightning-radio-group>
                     </p>
                   </div>
                   <div>

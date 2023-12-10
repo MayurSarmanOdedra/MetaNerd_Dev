@@ -33,26 +33,6 @@ public with sharing class MetaNerdController {
         }
     }
 
-    public class ToolingJSONResponse {
-        public Integer size;
-        public Integer totalSize;
-        public Boolean done;
-        public String entityTypeName;
-        public Object queryLocator;
-        public List<Record> records;
-    }
-
-    public class Record {
-        public String Id;
-        public String DeveloperName;
-        public Attributes attributes;
-    }
-
-    public class Attributes {
-		public String type; // in json: type
-		public String url;
-    }
-
     public class FieldReferencesInfo {
         @AuraEnabled
         public String fieldId { get; set; }
@@ -103,31 +83,31 @@ public with sharing class MetaNerdController {
 
             //Query the field definition tooling api
             Map<String,String> apiNamesWithUnderscoreByWithoutUnderscore = new Map<String, String>();
-            String modifiedApiNamesForQuery = '';
             for(String apiName : fieldMapByDeveloperName.keySet()){
-                if(fieldMapByDeveloperName.get(apiName).isCustom){
-                    String apiNameWithoutUnderscore = apiName.replace('__c', '');
-                    apiNamesWithUnderscoreByWithoutUnderscore.put(apiNameWithoutUnderscore, apiName);
-                    modifiedApiNamesForQuery += '\'' + apiNameWithoutUnderscore + '\',';
-                }
+                apiNamesWithUnderscoreByWithoutUnderscore.put(apiName.contains('__c') ? apiName.replace('__c', '') : apiName, apiName);
             }
-            modifiedApiNamesForQuery = modifiedApiNamesForQuery.removeEnd(',');
-            String query = 'SELECT Id,DeveloperName FROM FieldDefinition WHERE EntityDefinition.QualifiedApiName = \'' + sObjectName + '\' AND DeveloperName IN (' + modifiedApiNamesForQuery + ')';
+            String query = getCustomFieldIds(sObjectName);
             system.debug('Query::'+query);
             HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
             System.debug(response.getBody());
-            ToolingJSONResponse toolingRes = (ToolingJSONResponse) JSON.deserializeStrict(response.getBody(), ToolingJSONResponse.class);
+            CustomFieldToolingResponse toolingRes = (CustomFieldToolingResponse) JSON.deserializeStrict(response.getBody(), CustomFieldToolingResponse.class);
             if(toolingRes.size > 0 && toolingRes.records.size() > 0){
-                for (Record rec : toolingRes.records) {
-                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName));
-                    currentFieldInfo.fieldId = rec.Id;
-                    fieldMapByDeveloperName.put(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName), currentFieldInfo);
+                for (CustomFieldToolingResponse.Record rec : toolingRes.records) {
+                    if(fieldMapByDeveloperName.containsKey(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName))){
+                        FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName));
+                        currentFieldInfo.fieldId = rec.Id;
+                        fieldMapByDeveloperName.put(apiNamesWithUnderscoreByWithoutUnderscore.get(rec.DeveloperName), currentFieldInfo);
+                    }
                 }
             }
 
         }
         
         return fieldMapByDeveloperName.values();
+    }
+
+    private static string getCustomFieldIds(string sobjectName){
+        return 'SELECT Id, DeveloperName from CustomField WHERE TableEnumOrId = \'' + sObjectName + '\'';
     }
 
     private static Map<String, FieldReferencesInfo> extractFieldReferencesFromJSON(String jsonOutput){
@@ -137,8 +117,25 @@ public with sharing class MetaNerdController {
     }
 
     @AuraEnabled
-    public static void getFieldsReferences(List<Id> fieldIds){
-        String query = 'SELECT MetadataComponentType, MetadataComponentName, RefMetadataComponentName, RefMetadataComponentId FROM MetadataComponentDependency WHERE RefMetadataComponentId IN ' + fieldIds;
-        ToolingAPIUtility.queryToolingAPI(query);
+    public static List<Id> getFieldsReferences(List<Id> fieldIds){
+        String fieldIdsString = '';
+        for(String fieldId : fieldIds){
+            fieldIdsString += '\'' + fieldId + '\',';
+        }
+        fieldIdsString = fieldIdsString.removeEnd(',');
+        String query = 'SELECT RefMetadataComponentId FROM MetadataComponentDependency WHERE RefMetadataComponentId IN (' + fieldIdsString + ')';
+        HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
+        System.debug(response.getBody());
+        MetadataDependencyToolingResponse toolingRes = (MetadataDependencyToolingResponse) JSON.deserializeStrict(response.getBody(), MetadataDependencyToolingResponse.class);
+        if(toolingRes.size > 0 && toolingRes.records.size() > 0){
+            Set<Id> refComponentIds = new Set<Id>();
+            for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
+                Integer fieldIndex = fieldIds.indexOf(rec.RefMetadataComponentId);
+                if(fieldIndex > 0){
+                    fieldIds.remove(fieldIndex);
+                }
+            }
+        }
+        return fieldIds;
     }
 }
