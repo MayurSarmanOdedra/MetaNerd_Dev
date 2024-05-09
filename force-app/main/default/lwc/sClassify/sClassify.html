@@ -1,0 +1,42 @@
+<template>
+    <lightning-card icon-name="utility:left_align_text" variant="base">
+      <div slot="title">
+          Classify - Unused Classes Finder
+      </div>
+      <div slot="actions">
+    
+      </div>
+      <div class="slds-p-horizontal_medium slds-p-vertical_medium">
+        <!-- Card Body  -->
+        <div class="slds-col slds-align_absolute-center slds-p-around_medium">
+            <lightning-icon 
+              icon-name="utility:merge_field" 
+              alternative-text="Connected" 
+              size="large" 
+            ></lightning-icon>
+        </div>
+        <div class="slds-align_absolute-center">
+            <p class="slds-text-heading_small slds-p-around_small">
+              Find <b>un-used custom APEX classes</b> with ONE click.
+            </p>
+        </div>
+        <div class="slds-align_absolute-center">
+          <div class="slds-p-right_small">
+            <lightning-input 
+            type="text"
+            label="Class Name"
+            value=""
+            variant="label-hidden"
+            placeholder="Enter a Custom Class name..."
+          ></lightning-input>
+          </div>
+          <div>
+            <lightning-button 
+              variant="brand"
+              label="Let's Go"
+            ></lightning-button>
+          </div>
+        </div>
+      </div>
+    </lightning-card>
+</template>
