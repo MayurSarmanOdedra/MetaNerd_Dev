@@ -1,0 +1,12 @@
+<template>
+  <div class="slds-p-horizontal_medium slds-p-vertical_medium">
+    <lightning-combobox
+      name="SelectedSObject"
+      label={sObjectSelectionLabel}
+      value={value}
+      placeholder="Select SObject"
+      options={options}
+      onchange={handleSObjectComboChange}
+    ></lightning-combobox>
+  </div>
+</template>
