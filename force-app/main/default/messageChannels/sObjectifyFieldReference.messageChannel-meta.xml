@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>SObjectifyFieldReferenceChannel</masterLabel>
+    <isExposed>true</isExposed>
+    <description>This is a sample Lightning Message Channel that takes a field Id and uses it to get
+        its references using the MetadataComponentDependency tooling API.</description>
+    <lightningMessageFields>
+        <fieldName>selectedFieldId</fieldName>
+        <description>This is the Id of the field that got selected.</description>
+    </lightningMessageFields>
+</LightningMessageChannel>
