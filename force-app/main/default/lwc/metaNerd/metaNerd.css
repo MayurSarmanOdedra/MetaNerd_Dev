@@ -1,0 +1,7 @@
+label.slds-form-element__label { 
+    font-weight: bold !important; 
+}
+
+.slds-form-element__control .slds-checkbox{
+    display: inline-block !important;
+}
