@@ -1,10 +1,12 @@
 import { LightningElement, wire } from 'lwc';
 import getSObjectInfo from "@salesforce/apex/SObjectifyController.getSObjectInfo";
 import getFieldInfo from "@salesforce/apex/SObjectifyController.getFieldInfo";
+import getCustomSObjectId from "@salesforce/apex/SObjectifyController.getCustomSObjectId";
 
 export default class SObjectify extends LightningElement {
     options = undefined;
     selectedSObject;
+    selectSObjectIdOrName;
     selectedSObjectLabel;
     defaultSortDirection = "asc";
     sortDirection = "asc";
@@ -17,7 +19,10 @@ export default class SObjectify extends LightningElement {
     @wire(getSObjectInfo)
     orgSObjects({ error, data }) {
         if (data) {
-            this.options = this.sortData([...data]);
+            data = this.sortData([...data]);
+            const optionsProxy = [];
+            data.forEach( option => optionsProxy.push(option));
+            this.options = optionsProxy;
             this.processing = false;
         } else {
             console.log("No Sobjects returned with error");
@@ -25,7 +30,7 @@ export default class SObjectify extends LightningElement {
     }
 
     //sObjectSelector method
-    handleSObjectChange(event) {
+    async handleSObjectChange(event) {
         if (event.detail) {
             this.selectedSObject = event.detail;
             this.selectedSObjectLabel = this.options.filter( opt => opt.value === event.detail)[0].label;
@@ -33,22 +38,24 @@ export default class SObjectify extends LightningElement {
             //Start processing
             this.processing = true;
 
-            getFieldInfo({
-                sObjectName: this.selectedSObject,
-            })
-            .then((result) => {
-                const receivedFields = [...result].sort(this.sortBy("label", 1));
+            try {
+                this.selectSObjectIdOrName = await getCustomSObjectId({ sObjectName: this.selectedSObject });
+            }catch(error){
+                console.log(`Error occured when retrieving SObject Id. ::: ${JSON.stringify(error)}`);
+            }
+
+            try {
+                const result = await getFieldInfo({ sObjectName: this.selectedSObject, sObjectId: this.selectSObjectIdOrName })
+                const receivedFields = [...result].sort(this.sortBy("label", 1))
+                                                  .map(item => ({ ...item, isStandard: !item.isCustom }));
                 this.customFieldsCount = receivedFields.reduce((accumulator, field) => accumulator + (field.isCustom ? 1 : 0),0);
                 this.standardFieldsCount = receivedFields.length - this.customFieldsCount;
                 this.recordsData = receivedFields;
-                this.processing = false;
-            })
-            .catch((error) => {
-                console.log(
-                "Error occured when retrieving SObject fields. ::: " +
-                    JSON.stringify(error)
-                );
-            });
+            } catch(error) {
+                console.log(`Error occured when retrieving SObject fields. ::: ${JSON.stringify(error)}`);
+            }
+            //stop processing
+            this.processing = false;
         }
     }
 

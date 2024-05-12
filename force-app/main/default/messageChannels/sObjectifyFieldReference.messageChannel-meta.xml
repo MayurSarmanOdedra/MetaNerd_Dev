@@ -8,4 +8,8 @@
         <fieldName>selectedFieldId</fieldName>
         <description>This is the Id of the field that got selected.</description>
     </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>selectedSObjectId</fieldName>
+        <description>The id of the selected sobject</description>
+    </lightningMessageFields>
 </LightningMessageChannel>

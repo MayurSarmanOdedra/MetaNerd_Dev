@@ -1,9 +1,28 @@
 <template>
-    <div class="slds-p-horizontal_medium slds-p-vertical_medium">
+    <div class="slds-p-horizontal_medium slds-p-vertical_small">
         <div class="slds-var-p-bottom_medium">
-            <p>
-                <span class="slds-text-title_caps">{objectLabel}</span> has <span class="slds-text-color_success slds-text-heading_medium">{standardFieldsCount}</span> <b>  standard fields</b> and <span class="slds-text-color_destructive slds-text-heading_medium">{customFieldsCount}</span> <b>  custom fields</b>.
-            </p>
+            <lightning-layout>
+                <lightning-layout-item size="6"> 
+                    <div class="white-font-color bgcolor-success slds-box slds-align_absolute-center slds-grid slds-grid_vertical">
+                        <div class="slds-col">
+                            <span class="slds-text-heading_medium">{standardFieldsCount}</span>
+                        </div>
+                        <div class="slds-col">
+                            <b>Standard Fields ✅</b>
+                        </div>
+                    </div>
+                </lightning-layout-item>
+                <lightning-layout-item size="6">
+                    <div class="white-font-color bgcolor-destructive slds-box slds-align_absolute-center slds-grid slds-grid_vertical">
+                        <div class="slds-col">
+                            <span class="slds-text-heading_medium">{customFieldsCount}</span>
+                        </div>
+                        <div class="slds-col">
+                            <b>Custom Fields 🚀</b>
+                        </div>
+                    </div>
+                </lightning-layout-item>
+            </lightning-layout>
         </div>
         <div>
             <lightning-datatable
