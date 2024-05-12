@@ -6,9 +6,9 @@
       <div slot="actions">
     
       </div>
-      <template lwc:if={fieldReferences}>
+      <template lwc:if={fieldId}>
         <div slot="footer">
-          <b><u>NOTE:</u></b> These references are only from the core platform. Field references in packages such as <b>Omnistudio</b> and others will not show up here.
+          <b><u>NOTE:</u></b> Due to API limitations this component does not show references within <b>Report</b>, <b>ReportType</b>, and <b>FlexipageFieldInstance</b> metadata. To view the complete list, checkout the <a target="_blank" href={whereIsThisUsedUrl}><u>where is this used?</u></a> page. Keep in mind that these references are only from the core platform. Field references in packages such as <b>Omnistudio</b> and others will not show up here.
         </div>
       </template>
       <div class="slds-p-horizontal_medium slds-p-vertical_medium">

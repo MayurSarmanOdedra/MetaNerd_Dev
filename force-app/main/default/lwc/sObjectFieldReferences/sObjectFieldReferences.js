@@ -20,6 +20,7 @@ export default class SObjectFieldReferences extends LightningElement {
     fieldReferences;
     columns = columns;
     unUsedField = false;
+    whereIsThisUsedUrl;
 
     @wire(MessageContext)
     messageContext;
@@ -42,20 +43,24 @@ export default class SObjectFieldReferences extends LightningElement {
     }
 
     // Handler for message received by component
-    handleMessage(message) {
-        this.fieldId = message.selectedFieldId;
+    async handleMessage(message) {
+        let shortenedField = (message.selectedFieldId).slice(0, (message.selectedFieldId).length - 3);
 
-        getFieldReferences({ fieldId: this.fieldId })
-            .then( (result) => {
-                if(result.length === 0){
-                    this.fieldReferences = undefined;
-                    this.unUsedField = true;
-                    console.log('In');
-                }else{
-                    this.fieldReferences = result
-                }
-            })
-            .catch( (error) => console.log(`Error occured when getting field references :: ${JSON.stringify(error)}`))
+        const urlPreffix = `${window.location.origin}/p/setup/field/CustomFieldDependencyUi/d?`;
+        this.whereIsThisUsedUrl = urlPreffix.concat([`id=${shortenedField}`, `type=${message.selectedSObjectId}`, `retURL=/${shortenedField}`, `setupid=CustomObjects`].join('&'));
+
+        try {
+            let result = await getFieldReferences({ fieldId: message.selectedFieldId });
+            if(result.length > 0)
+                this.fieldReferences = result;
+            else {
+                this.fieldReferences = undefined;
+                this.unUsedField = true;
+            }
+            this.fieldId = message.selectedFieldId;
+        }catch(error){
+            console.log(`Error occured when getting field references :: ${JSON.stringify(error)}`);
+        } 
     }
 
     // Standard lifecycle hooks used to subscribe and unsubsubscribe to the message channel

@@ -9,7 +9,7 @@
         <c-s-object-selector options={options} onsobjectchanged={handleSObjectChange}></c-s-object-selector>
       </template>
       <template lwc:if={recordsData}>
-        <c-s-object-fields-display fields-data={recordsData} object-label={selectedSObjectLabel} standard-fields-count={standardFieldsCount} custom-fields-count={customFieldsCount}  default-sort-direction={defaultSortDirection} sort-direction={sortDirection}></c-s-object-fields-display>
+        <c-s-object-fields-display fields-data={recordsData} object-label={selectedSObjectLabel} standard-fields-count={standardFieldsCount} custom-fields-count={customFieldsCount} s-object-id-or-name={selectSObjectIdOrName}  default-sort-direction={defaultSortDirection} sort-direction={sortDirection}></c-s-object-fields-display>
       </template>
       <template lwc:if={processing}>
         <div class="slds-var-p-around_large">
