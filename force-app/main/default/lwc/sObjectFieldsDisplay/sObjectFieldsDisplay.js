@@ -22,7 +22,6 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     handleRowAction(event){
-        console.log(`Row action event ::: ${JSON.stringify(event)}`);
         const payload = { selectedFieldId: event.detail.row.fieldId, selectedSObjectId: this.sObjectIdOrName };
 
         publish(this.messageContext, selectedFieldId, payload);
