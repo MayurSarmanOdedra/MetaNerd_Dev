@@ -15,7 +15,6 @@ div[slot='footer'] a:hover {
     color: black;
 }
 
-.detail-reference-link {
-	background-color: #F1F1F1;
-	border-color: #F1F1F1;
+.deleteIcon {
+    --slds-c-icon-color-foreground-default: red;
 }

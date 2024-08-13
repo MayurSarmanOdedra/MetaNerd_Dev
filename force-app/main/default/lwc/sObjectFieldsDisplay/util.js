@@ -17,7 +17,6 @@ const fieldColumns = [
         initialWidth: 140
     },
     {
-        label: 'References',
         type: 'button',
         typeAttributes: {
             label: 'View References',
@@ -25,7 +24,7 @@ const fieldColumns = [
             disabled: {
                 fieldName: 'isStandard'
             },
-            variant: 'brand-outline',
+            variant: 'brand',
         },
         initialWidth: 170
 

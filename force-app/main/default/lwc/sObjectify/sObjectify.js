@@ -1,94 +1,150 @@
-import { LightningElement, wire } from 'lwc';
+import { LightningElement, wire } from "lwc";
 import getSObjectInfo from "@salesforce/apex/SObjectifyController.getSObjectInfo";
 import getFieldInfo from "@salesforce/apex/SObjectifyController.getFieldInfo";
 import getCustomSObjectId from "@salesforce/apex/SObjectifyController.getCustomSObjectId";
+import { 
+  publish, 
+  subscribe,
+  unsubscribe,
+  APPLICATION_SCOPE, 
+  MessageContext 
+} from "lightning/messageService";
+import sendCustomFields from "@salesforce/messageChannel/sObjectifyGetCurrentCustomFields__c";
+import askForCurrentFields from "@salesforce/messageChannel/sObjectifyAskForCurrentFields__c";
+import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c';
 
 export default class SObjectify extends LightningElement {
-    options = undefined;
-    selectedSObject;
-    selectSObjectIdOrName;
-    selectedSObjectLabel;
-    defaultSortDirection = "asc";
-    sortDirection = "asc";
-    sortedBy;
-    recordsData = undefined;
-    customFieldsCount = 0
-    standardFieldsCount = 0
-    processing = true
+  options = undefined;
+  selectedSObject;
+  selectSObjectIdOrName;
+  selectedSObjectLabel;
+  sortedBy;
+  recordsData = undefined;
+  customFieldsCount = 0;
+  standardFieldsCount = 0;
+  processing = true;
+  askForCurrentFieldsSubscription = null;
+  sObjectChangedSubscription = null;
 
-    @wire(getSObjectInfo)
-    orgSObjects({ error, data }) {
-        if (data) {
-            data = this.sortData([...data]);
-            const optionsProxy = [];
-            data.forEach( option => optionsProxy.push(option));
-            this.options = optionsProxy;
-            this.processing = false;
-        } else {
-            console.log("No Sobjects returned with error");
-        }
+  @wire(MessageContext)
+  messageContext;
+
+  @wire(getSObjectInfo)
+  orgSObjects({ error, data }) {
+    if (data) {
+      this.options = this.sortData([...data]);
+      this.processing = false;
+    } else {
+      console.log("No Sobjects returned with error");
+    }
+  }
+
+  connectedCallback(){
+    this.subscribeToMessageChannel();
+  }
+
+  subscribeToMessageChannel(){
+    if (!this.askForCurrentFieldsSubscription) {
+      this.askForCurrentFieldsSubscription = subscribe(
+        this.messageContext,
+        askForCurrentFields,
+        (message) => this.handleAskForCurrentFieldsMessage(),
+        { scope: APPLICATION_SCOPE }
+      )
     }
 
-    //sObjectSelector method
-    async handleSObjectChange(event) {
-        if (event.detail) {
-            this.selectedSObject = event.detail;
-            this.selectedSObjectLabel = this.options.filter( opt => opt.value === event.detail)[0].label;
+    if(!this.sObjectChangedSubscription){
+      this.sObjectChangedSubscription = subscribe(
+        this.messageContext,
+        sObjectChanged,
+        (message) => this.handleSObjectComboChange(message),
+        { scope: APPLICATION_SCOPE }
+      )
+    }
+  }
 
-            //Start processing
-            this.processing = true;
+  handleAskForCurrentFieldsMessage(){
+    let customFields = this.recordsData.filter( record => record.isCustom).map( rec => ( { fieldId: rec.fieldId, apiName: rec.apiName, label: rec.label  } ))
+    publish(this.messageContext, sendCustomFields, { currentCustomFields: customFields });
+  }
 
-            try {
-                this.selectSObjectIdOrName = await getCustomSObjectId({ sObjectName: this.selectedSObject });
-            }catch(error){
-                console.log(`Error occured when retrieving SObject Id. ::: ${JSON.stringify(error)}`);
-            }
+  async handleSObjectComboChange(message){
+    this.selectedSObject = message.sObjectAPIName;
+    this.selectedSObjectLabel = message.sObjectLabel;
 
-            try {
-                const result = await getFieldInfo({ sObjectName: this.selectedSObject, sObjectId: this.selectSObjectIdOrName })
-                const receivedFields = [...result].sort(this.sortBy("label", 1))
-                                                  .map(item => ({ ...item, isStandard: !item.isCustom }));
-                this.customFieldsCount = receivedFields.reduce((accumulator, field) => accumulator + (field.isCustom ? 1 : 0),0);
-                this.standardFieldsCount = receivedFields.length - this.customFieldsCount;
-                this.recordsData = receivedFields;
-            } catch(error) {
-                console.log(`Error occured when retrieving SObject fields. ::: ${JSON.stringify(error)}`);
-            }
-            //stop processing
-            this.processing = false;
-        }
+    //Start processing
+    this.processing = true;
+
+    try {
+      this.selectSObjectIdOrName = await getCustomSObjectId({
+        sObjectName: this.selectedSObject,
+      });
+    } catch (error) {
+      console.log(
+        `Error occured when retrieving SObject Id. ::: ${JSON.stringify(
+          error
+        )}`
+      );
     }
 
-    //sObjectSelector method
-    sortData(dataToSort) {
-        return dataToSort.sort((a, b) => {
-            return a.label < b.label ? -1 : a.label > b.label ? 1 : 0;
-        });
+    try {
+      const result = await getFieldInfo({
+        sObjectName: this.selectedSObject,
+        sObjectId: this.selectSObjectIdOrName,
+      });
+      const receivedFields = [...result]
+        .sort(this.sortBy("label", 1))
+        .map((item) => ({ ...item, isStandard: !item.isCustom }));
+      this.customFieldsCount = receivedFields.reduce(
+        (accumulator, field) => accumulator + (field.isCustom ? 1 : 0),
+        0
+      );
+      this.standardFieldsCount =
+        receivedFields.length - this.customFieldsCount;
+      this.recordsData = receivedFields;
+    } catch (error) {
+      console.log(
+        `Error occured when retrieving SObject fields. ::: ${JSON.stringify(
+          error
+        )}`
+      );
     }
+    //stop processing
+    this.processing = false;
+  }
 
-    onHandleSort(event) {
-        const { fieldName: sortedBy, sortDirection } = event.detail;
-        const cloneData = [...this.recordsData];
+  disconnectedCallback(){
+    this.unsubscribeFromMessageChannel();
+  }
+
+  unsubscribeFromMessageChannel(){
+    unsubscribe(this.askForCurrentFieldsSubscription);
+    unsubscribe(this.sObjectChangedSubscription);
     
-        cloneData.sort(this.sortBy(sortedBy, sortDirection === "asc" ? 1 : -1));
-        this.recordsData = cloneData;
-        this.sortDirection = sortDirection;
-        this.sortedBy = sortedBy;
-    }
+    this.askForCurrentFieldsSubscription = null;
+    this.sObjectChangedSubscription = null;
+  }
 
-    sortBy(field, reverse, primer) {
-        const key = primer
-            ? function (x) {
-                return primer(x[field]);
-            }
-            : function (x) {
-                return x[field];
-            };
+  sortData(dataToSort) {
+    return dataToSort.sort((a, b) => {
+      return a.label < b.label ? -1 : a.label > b.label ? 1 : 0;
+    });
+  }
 
-        return function (a, b) {
-            a = key(a);
-            b = key(b);
-            return reverse * ((a > b) - (b > a));
+  sortBy(field, reverse, primer) {
+    const key = primer
+      ? function (x) {
+          return primer(x[field]);
+        }
+      : function (x) {
+          return x[field];
         };
-    }
+
+    return function (a, b) {
+      a = key(a);
+      b = key(b);
+      return reverse * ((a > b) - (b > a));
+    };
+  }
+
 }

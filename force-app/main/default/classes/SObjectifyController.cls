@@ -1,5 +1,7 @@
 public with sharing class SObjectifyController {
 
+    private static String CUSTOM_EXTENSION = '__c';
+
     public class SObjectInfo {
         @AuraEnabled
         public String label { get; set; }
@@ -81,12 +83,12 @@ public with sharing class SObjectifyController {
             }
 
             //Query the field definition tooling api
-            String query = 'SELECT Id, DeveloperName from CustomField WHERE TableEnumOrId = \'' + (sObjectName.contains('__c') ? sObjectId : sObjectName) + '\'';
+            String query = 'SELECT Id, DeveloperName from CustomField WHERE TableEnumOrId = \'' + (sObjectName.contains(CUSTOM_EXTENSION) ? sObjectId : sObjectName) + '\'';
             HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
             CustomFieldToolingResponse toolingRes = (CustomFieldToolingResponse) JSON.deserializeStrict(response.getBody(), CustomFieldToolingResponse.class);
             if(toolingRes.size > 0){
                 for (CustomFieldToolingResponse.Record rec : toolingRes.records) {
-                    string fieldApiName = rec.DeveloperName + '__c';
+                    string fieldApiName = rec.DeveloperName + CUSTOM_EXTENSION;
                     if(fieldMapByDeveloperName.containsKey(fieldApiName)){
                         FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(fieldApiName);
                         currentFieldInfo.fieldId = rec.Id;
@@ -100,8 +102,8 @@ public with sharing class SObjectifyController {
     @AuraEnabled(cacheable=true)
     public static string getCustomSObjectId(string sObjectName){
         string returnValue = sObjectName;
-        if(sObjectName.contains('__c')){
-            String objectQuery = 'SELECT Id FROM CustomObject WHERE DeveloperName = \'' + sObjectName.replace('__c', '') + '\'';
+        if(sObjectName.contains(CUSTOM_EXTENSION)){
+            String objectQuery = 'SELECT Id FROM CustomObject WHERE DeveloperName = \'' + sObjectName.replace(CUSTOM_EXTENSION, '') + '\'';
             HttpResponse objectResponse = ToolingAPIUtility.queryToolingAPI(objectQuery);
             Map<String, Object> results = (Map<String, Object>) JSON.deserializeUntyped(objectResponse.getBody());
             List<Object> records = (List<Object>) results.get('records');
@@ -125,5 +127,35 @@ public with sharing class SObjectifyController {
             }
         }
         return fieldRefs;
+    }
+
+    @AuraEnabled
+    public static List<String> getUnusedFields(List<String> customFieldIds){
+        try {
+            List<String> modifiedIds = new List<String>();
+            Set<String> fieldIdsWithReferences = new Set<String>();
+            for(String customFieldId : customFieldIds){
+                modifiedIds.add('\'' + customFieldId + '\'');
+            }
+            String query = 'SELECT MetadataComponentName, MetadataComponentType, RefMetadataComponentId FROM MetadataComponentDependency WHERE RefMetadataComponentId IN (' + String.join(modifiedIds, ',') + ')';
+            HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
+            MetadataDependencyToolingResponse toolingRes = (MetadataDependencyToolingResponse) JSON.deserializeStrict(response.getBody(), MetadataDependencyToolingResponse.class);
+            if(toolingRes.size > 0){
+                for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
+                    fieldIdsWithReferences.add(rec.RefMetadataComponentId);
+                }
+            }
+
+            Set<String> unusedFields = new Set<String>(customFieldIds);
+            unusedFields.removeAll(fieldIdsWithReferences);
+
+            System.debug('Unused size ::: ' + unusedFields.size());
+            System.debug('Used size ::: ' + fieldIdsWithReferences.size());
+
+            return new List<String>(unusedFields);
+
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
     }
 }
