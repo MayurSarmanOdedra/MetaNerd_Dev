@@ -2,23 +2,33 @@
     <div class="slds-p-horizontal_medium slds-p-vertical_small">
         <div class="slds-var-p-bottom_medium">
             <lightning-layout>
-                <lightning-layout-item size="6"> 
+                <lightning-layout-item size="4"> 
                     <div class="white-font-color bgcolor-success slds-box slds-align_absolute-center slds-grid slds-grid_vertical">
                         <div class="slds-col">
-                            <span class="slds-text-heading_medium">{standardFieldsCount}</span>
+                            <span class="slds-text-heading_medium">{standardFieldsCount} ✅</span>
                         </div>
                         <div class="slds-col">
-                            <b>Standard Fields ✅</b>
+                            <b>Standard Field(s)</b>
                         </div>
                     </div>
                 </lightning-layout-item>
-                <lightning-layout-item size="6">
+                <lightning-layout-item size="4">
                     <div class="white-font-color bgcolor-destructive slds-box slds-align_absolute-center slds-grid slds-grid_vertical">
                         <div class="slds-col">
-                            <span class="slds-text-heading_medium">{customFieldsCount}</span>
+                            <span class="slds-text-heading_medium">{customFieldsCount} 🚀</span>
                         </div>
                         <div class="slds-col">
-                            <b>Custom Fields 🚀</b>
+                            <b>Custom Field(s)</b>
+                        </div>
+                    </div>
+                </lightning-layout-item>
+                <lightning-layout-item size="4">
+                    <div class="white-font-color bgcolor-totalFields slds-box slds-align_absolute-center slds-grid slds-grid_vertical">
+                        <div class="slds-col">
+                            <span class="slds-text-heading_medium">{totalFields} 🔥</span>
+                        </div>
+                        <div class="slds-col">
+                            <b>Total Fields</b>
                         </div>
                     </div>
                 </lightning-layout-item>
@@ -36,6 +46,7 @@
                 onrowaction={handleRowAction}
                 show-row-number-column
                 hide-checkbox-column
+                resize-column-disabled
             ></lightning-datatable>
         </div>
     </div>

@@ -1,10 +1,16 @@
-import { LightningElement, api } from "lwc";
+import { LightningElement, api, wire } from "lwc";
+import { publish, MessageContext } from 'lightning/messageService';
+import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c';
 
 
 export default class SObjectSelector extends LightningElement {
 
   @api options;
   isSObjectSelected = false;
+
+
+  @wire(MessageContext)
+  messageContext;
 
   //Get SObject Selection Label
   get sObjectSelectionLabel() {
@@ -14,9 +20,12 @@ export default class SObjectSelector extends LightningElement {
   handleSObjectComboChange(event){
     if(!this.isSObjectSelected)
       this.isSObjectSelected = true;
-    
-    this.dispatchEvent(new CustomEvent('sobjectchanged', {
-      detail: event.detail.value
-    }));
+
+      let payload = { 
+        sObjectAPIName: event.detail.value,
+        sObjectLabel: event.target.options.find(opt => opt.value === event.detail.value).label.split(' - ')[0]
+      };
+
+      publish(this.messageContext, sObjectChanged, payload);
   }
 }

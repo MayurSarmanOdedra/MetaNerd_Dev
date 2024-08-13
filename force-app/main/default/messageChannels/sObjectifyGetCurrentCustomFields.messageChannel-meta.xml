@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>SObjectifyGetCurrentCustomFields</masterLabel>
+    <isExposed>true</isExposed>
+    <description>This is a Lightning Message Channel that gets the currently selected SObjects custom fields.</description>
+    <lightningMessageFields>
+        <fieldName>currentCustomFields</fieldName>
+        <description>This is the list of custom fields.</description>
+    </lightningMessageFields>
+</LightningMessageChannel>

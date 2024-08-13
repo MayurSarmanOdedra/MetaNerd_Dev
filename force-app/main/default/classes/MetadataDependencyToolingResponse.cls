@@ -5,5 +5,6 @@ public class MetadataDependencyToolingResponse extends ToolingResponse {
         public String MetadataComponentType;
         public String MetadataComponentName;
         public Attributes attributes;
+        public String RefMetadataComponentId;
     }
 }
