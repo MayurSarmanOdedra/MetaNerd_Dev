@@ -37,6 +37,8 @@ export default class SObjectFieldReferences extends LightningElement {
   columns = columns;
   unUsedField = false;
   whereIsThisUsedUrl;
+  selectedFieldLabel;
+  selectedFieldAPIName;
 
   selectedFieldIdSubscription = null;
   sObjectChangedSubscription = null;
@@ -46,6 +48,10 @@ export default class SObjectFieldReferences extends LightningElement {
 
   get showWhereIsThisUsed() {
     return this.fieldReferences || this.unUsedField;
+  }
+
+  get fieldLabel(){
+    return `${this.selectedFieldLabel} (${this.selectedFieldAPIName})`;
   }
 
   // Encapsulate logic for Lightning message service subscribe and unsubsubscribe
@@ -71,6 +77,8 @@ export default class SObjectFieldReferences extends LightningElement {
 
   // Handler for message received by component
   async handleFieldSelectMessage(message) {
+    this.selectedFieldLabel = message.selectedFieldLabel;
+    this.selectedFieldAPIName = message.selectedFieldAPIName;
     let shortenedField = message.selectedFieldId.slice(
       0,
       message.selectedFieldId.length - 3

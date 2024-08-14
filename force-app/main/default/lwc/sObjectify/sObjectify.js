@@ -94,6 +94,7 @@ export default class SObjectify extends LightningElement {
       });
       const receivedFields = [...result]
         .sort(this.sortBy("label", 1))
+        .sort(this.sortBy('isCustom', -1))
         .map((item) => ({ ...item, isStandard: !item.isCustom }));
       this.customFieldsCount = receivedFields.reduce(
         (accumulator, field) => accumulator + (field.isCustom ? 1 : 0),

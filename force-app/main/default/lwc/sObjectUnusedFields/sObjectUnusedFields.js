@@ -27,7 +27,7 @@ const columns = [
       label: "Where is this used?",
       name: "view_component",
       disabled: false,
-      variant: "neutral",
+      variant: "brand-outline",
     },
     initialWidth: 170,
   },

@@ -5,7 +5,7 @@
       </div>
       <div slot="actions">
         <template lwc:if={showWhereIsThisUsed}>
-          <lightning-button label="Where is this used?" onclick={handleWhereIsThisUsedClick}></lightning-button>
+          <lightning-button label="Where is this used?" variant="brand-outline" onclick={handleWhereIsThisUsedClick}></lightning-button>
         </template>
       </div>
       <template lwc:if={fieldId}>
@@ -15,6 +15,11 @@
       </template>
       <div class="slds-p-horizontal_medium slds-p-vertical_medium">
         <!-- Card Body  -->
+        <template lwc:if={showWhereIsThisUsed}>
+          <div class="slds-var-p-around_medium">
+            <div class="slds-text-title_caps slds-show_inline">References for ::: </div><lightning-badge label={fieldLabel} class="slds-badge_lightest"></lightning-badge>
+          </div>
+        </template>
         <template lwc:if={fieldReferences}>
             <lightning-datatable
               key-field="componentName"

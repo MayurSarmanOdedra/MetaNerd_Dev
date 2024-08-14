@@ -13,6 +13,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     defaultSortDirection = "asc";
     sortDirection = "asc";
+    sortedBy = 'label';
 
     @wire(MessageContext)
     messageContext;
