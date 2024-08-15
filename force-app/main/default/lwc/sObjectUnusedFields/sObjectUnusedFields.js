@@ -128,3 +128,31 @@ export default class SObjectUnusedFields extends LightningElement {
     this.unsubscribeToMessageChannel();
   }
 }
+
+/*
+{
+    type: "button-icon",
+    typeAttributes: {
+      iconName: "utility:info",
+      name: "view_component",
+      alternativeText: 'where is this used?',
+      disabled: false,
+      title: 'Where is this used?',
+      variant: 'brand'
+    },
+    initialWidth: 40,
+  },
+  {
+    type: "button-icon",
+    typeAttributes: {
+      iconName: "utility:clear",
+      name: "delete_component",
+      alternativeText: 'Delete this field',
+      disabled: false,
+      title: 'Delete',
+      variant: 'brand'
+    },
+    initialWidth: 40,
+  }
+
+*/

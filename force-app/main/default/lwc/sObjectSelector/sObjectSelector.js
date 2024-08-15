@@ -12,6 +12,10 @@ export default class SObjectSelector extends LightningElement {
   @wire(MessageContext)
   messageContext;
 
+  get sObjectOptions(){
+    return JSON.parse(this.options);
+  }
+
   //Get SObject Selection Label
   get sObjectSelectionLabel() {
     return this.isSObjectSelected ? "Selected SObject" : "Select SObject";

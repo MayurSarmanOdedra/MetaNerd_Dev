@@ -32,7 +32,8 @@ export default class SObjectify extends LightningElement {
   @wire(getSObjectInfo)
   orgSObjects({ error, data }) {
     if (data) {
-      this.options = this.sortData([...data]);
+      let dataAsString = JSON.stringify(this.sortData([...data]));
+      this.options = dataAsString;
       this.processing = false;
     } else {
       console.log("No Sobjects returned with error");
