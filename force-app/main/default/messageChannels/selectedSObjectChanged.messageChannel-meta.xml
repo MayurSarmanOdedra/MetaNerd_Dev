@@ -5,10 +5,14 @@
     <description>This is a sample Lightning Message Channel that takes current selected sobject and passes the lable, API name, and its ID.</description>
     <lightningMessageFields>
         <fieldName>sObjectLabel</fieldName>
-        <description>This is the lable of the selected sobject.</description>
+        <description>This is the label of the selected sobject.</description>
     </lightningMessageFields>
     <lightningMessageFields>
         <fieldName>sObjectAPIName</fieldName>
         <description>The API name of the selected sobject</description>
+    </lightningMessageFields>
+    <lightningMessageFields>
+        <fieldName>sObjectIdOrName</fieldName>
+        <description>This will either be the Id of the SObject if its a custom object, or it will be the API name of the standard object.</description>
     </lightningMessageFields>
 </LightningMessageChannel>

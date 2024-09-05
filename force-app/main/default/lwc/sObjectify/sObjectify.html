@@ -2,14 +2,19 @@
   <lightning-card icon-name="utility:data_graph" variant="base">
     <div slot="title">SObjectify</div>
     <div slot="actions"></div>
-    <div slot="footer"></div>
     <div>
       <!-- Card Body  -->
       <template lwc:if={options}>
-        <c-s-object-selector options={options} onsobjectchanged={handleSObjectChange}></c-s-object-selector>
-      </template>
-      <template lwc:if={recordsData}>
-        <c-s-object-fields-display fields-data={recordsData} object-label={selectedSObjectLabel} standard-fields-count={standardFieldsCount} custom-fields-count={customFieldsCount} s-object-id-or-name={selectSObjectIdOrName}></c-s-object-fields-display>
+        <div class="slds-p-horizontal_medium slds-p-vertical_small">
+          <lightning-combobox
+            name="SelectedSObject"
+            label={sObjectSelectionLabel}
+            value={value}
+            placeholder="Select SObject"
+            options={options}
+            onchange={handleSObjectComboChange}
+          ></lightning-combobox>
+        </div>
       </template>
       <template lwc:if={processing}>
         <div class="slds-var-p-around_large">
