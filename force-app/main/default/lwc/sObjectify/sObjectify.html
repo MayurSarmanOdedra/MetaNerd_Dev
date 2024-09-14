@@ -1,7 +1,11 @@
 <template>
   <lightning-card icon-name="utility:data_graph" variant="base">
     <div slot="title">SObjectify</div>
-    <div slot="actions"></div>
+    <div slot="actions">
+      <template lwc:if={isSObjectSelected}>
+        <lightning-button variant="brand-outline" label="View object in Object Manager" title="View Object in Object Manager" onclick={handleViewSObjectClick}></lightning-button>
+      </template>
+    </div>
     <div>
       <!-- Card Body  -->
       <template lwc:if={options}>
@@ -15,6 +19,25 @@
             onchange={handleSObjectComboChange}
           ></lightning-combobox>
         </div>
+      </template>
+      <template lwc:if={sObjectInfo}>
+          <!-- SObject Info goes here... -->
+          <div class="slds-p-horizontal_medium">
+              <div class="slds-var-p-bottom_medium">
+                  <lightning-layout multiple-rows>
+                      <template for:each={sObjectInfo} for:item="info">
+                          <lightning-layout-item size="12" small-device-size="6" medium-device-size="4" large-device-size="2" key={info.name}> 
+                            <div data-id={info.name} class={info.classes} onclick={handleInfoClick} data-count={info.count}>
+                              <span class="slds-text-heading_medium" style="pointer-events: none;">{info.count} {info.emoji}</span>
+                              <span style="pointer-events: none;">
+                                <b>{info.name}</b>
+                              </span>
+                            </div>
+                          </lightning-layout-item>    
+                      </template>
+                  </lightning-layout>
+              </div>
+          </div>
       </template>
       <template lwc:if={processing}>
         <div class="slds-var-p-around_large">

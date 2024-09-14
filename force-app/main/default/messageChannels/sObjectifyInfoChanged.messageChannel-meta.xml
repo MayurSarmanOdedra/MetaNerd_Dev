@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningMessageChannel xmlns="http://soap.sforce.com/2006/04/metadata">
+    <masterLabel>SObjectifyInfoChanged</masterLabel>
+    <isExposed>true</isExposed>
+    <description>This is a Lightning Message Channel that takes current selected sobject's info and passes the label of info that is needed.</description>
+    <lightningMessageFields>
+        <fieldName>infoLabel</fieldName>
+        <description>This is the label of the selected sobject info.</description>
+    </lightningMessageFields>
+</LightningMessageChannel>
