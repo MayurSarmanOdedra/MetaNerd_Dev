@@ -8,6 +8,7 @@ import {
 import getFieldReferences from "@salesforce/apex/SObjectifyController.getFieldReferences";
 import selectedFieldId from "@salesforce/messageChannel/sObjectifyFieldReference__c";
 import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c';
+import infoChanged from "@salesforce/messageChannel/sObjectifyInfoChanged__c";
 
 const columns = [
   {
@@ -36,12 +37,13 @@ export default class SObjectFieldReferences extends LightningElement {
   fieldReferences;
   columns = columns;
   unUsedField = false;
-  whereIsThisUsedUrl;
   selectedFieldLabel;
   selectedFieldAPIName;
+  selectedSObjectId;
 
-  selectedFieldIdSubscription = null;
-  sObjectChangedSubscription = null;
+  selectedFieldIdSubscription;
+  sObjectChangedSubscription;
+  infoChangedSubscription;
 
   @wire(MessageContext)
   messageContext;
@@ -69,7 +71,16 @@ export default class SObjectFieldReferences extends LightningElement {
       this.sObjectChangedSubscription = subscribe(
         this.messageContext,
         sObjectChanged,
-        (message) => this.handleSObjectChangedMessage(),
+        (message) => this.resetComponent(),
+        { scope: APPLICATION_SCOPE }
+      )
+    }
+
+    if(!this.infoChangedSubscription){
+      this.infoChangedSubscription = subscribe(
+        this.messageContext,
+        infoChanged,
+        (message) => this.resetComponent(),
         { scope: APPLICATION_SCOPE }
       )
     }
@@ -79,20 +90,7 @@ export default class SObjectFieldReferences extends LightningElement {
   async handleFieldSelectMessage(message) {
     this.selectedFieldLabel = message.selectedFieldLabel;
     this.selectedFieldAPIName = message.selectedFieldAPIName;
-    let shortenedField = message.selectedFieldId.slice(
-      0,
-      message.selectedFieldId.length - 3
-    );
-    
-    const urlPreffix = `${window.location.origin}/p/setup/field/CustomFieldDependencyUi/d?`;
-    this.whereIsThisUsedUrl = urlPreffix.concat(
-      [
-        `id=${shortenedField}`,
-        `type=${message.selectedSObjectId}`,
-        `retURL=/${shortenedField}`,
-        `setupid=CustomObjects`,
-      ].join("&")
-    );
+    this.selectedSObjectId = message.selectedSObjectId;
     
     try {
       let result = await getFieldReferences({
@@ -114,22 +112,24 @@ export default class SObjectFieldReferences extends LightningElement {
   }
 
   handleWhereIsThisUsedClick(){
-    window.open(this.whereIsThisUsedUrl);
+    window.open(`${window.location.origin}/lightning/setup/ObjectManager/${this.selectedSObjectId}/FieldsAndRelationships/${this.fieldId.slice(0,this.fieldId.length - 3)}/fieldDependencies`);
   }
 
-  handleSObjectChangedMessage(){
+  resetComponent(){
     this.fieldId = undefined;
     this.fieldReferences = undefined;
     this.unUsedField = false;
-    this.whereIsThisUsedUrl = undefined;
+    this.selectedSObjectId = undefined;
   }
   
   unsubscribeToMessageChannel() {
     unsubscribe(this.selectedFieldIdSubscription);
     unsubscribe(this.sObjectChangedSubscription);
+    unsubscribe(this.infoChangedSubscription);
 
     this.selectedFieldIdSubscription = null;
     this.sObjectChangedSubscription = null;
+    this.infoChangedSubscription = null;
   }
 
   // Standard lifecycle hooks used to subscribe and unsubsubscribe to the message channel
