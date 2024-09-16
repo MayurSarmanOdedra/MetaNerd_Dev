@@ -11,25 +11,29 @@ import {
 } from "lightning/messageService";
 import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c';
 import selectedFieldId from "@salesforce/messageChannel/sObjectifyFieldReference__c";
-import sendCustomFields from "@salesforce/messageChannel/sObjectifyGetCurrentCustomFields__c";
-import askForCurrentFields from "@salesforce/messageChannel/sObjectifyAskForCurrentFields__c";
 import infoChanged from "@salesforce/messageChannel/sObjectifyInfoChanged__c";
+import getUnusedFields from "@salesforce/apex/SObjectifyController.getUnusedFields";
 
 export default class SObjectFieldsDisplay extends LightningElement {
-    
+    //Common variables
     sObjectIdOrName;
     sObjectName;
     recordsData;
     currentInfoLabel;
     sObjectChangedSubscription;
-    askForCurrentFieldsSubscription;
     infoChangedSubscription;
-    customFieldsCount = 0;
-    standardFieldsCount = 0;
     processing = false;
     defaultSortDirection = "asc";
     sortDirection = "asc";
     sortedBy = 'label';
+    noRecordsFound = false;
+    //Fields related variables
+    customFieldsCount = 0;
+    standardFieldsCount = 0;
+    allFields;
+    unUsedFields;
+    showAllFields = true;
+    unUsedFieldsInfoLabel = 'Fields.Unused';
 
     @wire(MessageContext)
     messageContext;
@@ -39,37 +43,120 @@ export default class SObjectFieldsDisplay extends LightningElement {
       return columnsByMetadataInfoMap.get(this.currentInfoLabel);
     }
 
+    get currentLabelIsFields(){
+      return this.currentInfoLabel === 'Fields'
+    }
+
     get totalFields() {
-        return this.currentInfoLabel === 'Fields' ? (Number(this.standardFieldsCount) + Number(this.customFieldsCount)) : null;
+      return this.currentLabelIsFields ? (Number(this.standardFieldsCount) + Number(this.customFieldsCount)) : null;
+    }
+
+    get showFieldsActions(){
+      return (this.currentLabelIsFields || this.currentInfoLabel === this.unUsedFieldsInfoLabel) && this.customFieldsCount > 0;
+    }
+
+    get showAllFieldsClicked(){
+      return this.showAllFields;
+    }
+
+    get alreadyRetrievedUnusedFields(){
+      return this.unUsedFields;
+    }
+
+    get showApiLimitationFooter(){
+      return !this.showAllFields && this.unUsedFields;
     }
 
     connectedCallback(){
-        if (!this.sObjectChangedSubscription) {
-            this.sObjectChangedSubscription = subscribe(
-                this.messageContext,
-                sObjectChanged,
-                (message) => this.handleSObjectComboChange(message),
-                { scope: APPLICATION_SCOPE }
-            )
-        }
-
-        if (!this.askForCurrentFieldsSubscription) {
-            this.askForCurrentFieldsSubscription = subscribe(
+      if (!this.sObjectChangedSubscription) {
+          this.sObjectChangedSubscription = subscribe(
               this.messageContext,
-              askForCurrentFields,
-              (message) => this.handleAskForCurrentFieldsMessage(),
+              sObjectChanged,
+              (message) => this.handleSObjectComboChange(message),
               { scope: APPLICATION_SCOPE }
-            )
-        }
+          )
+      }
+      if(!this.infoChangedSubscription){
+          this.infoChangedSubscription = subscribe(
+              this.messageContext,
+              infoChanged,
+              (message) => this.handleInfoChangedMessage(message),
+              { scope: APPLICATION_SCOPE }
+          )
+      }
+    }
 
-        if(!this.infoChangedSubscription){
-            this.infoChangedSubscription = subscribe(
-                this.messageContext,
-                infoChanged,
-                (message) => this.handleInfoChangedMessage(message),
-                { scope: APPLICATION_SCOPE }
-            )
-        }
+    async handleFieldsFilter(event){
+      if (event.target.variant === 'brand') return;
+
+      this.toggleShowAllFields();
+      this.updateButtonVariants();
+
+      this.startProcessing();
+
+      if (this.showAllFieldsClicked) {
+        this.setAllFieldsData();
+      } else if (this.alreadyRetrievedUnusedFields) {
+        this.setUnusedFieldsData();
+      } else {
+        await this.retrieveAndSetUnusedFields();
+      }
+
+      this.stopProcessing();
+    }
+
+    toggleShowAllFields() {
+      this.showAllFields = !this.showAllFields;
+    }
+    
+    updateButtonVariants() {
+      const unusedFieldsVariant = this.showAllFields ? 'brand-outline' : 'brand';
+      const allFieldsVariant = this.showAllFields ? 'brand' : 'brand-outline';
+    
+      this.refs.showUnusedFieldsButton.variant = unusedFieldsVariant;
+      this.refs.showAllFieldsButton.variant = allFieldsVariant;
+    }
+    
+    startProcessing() {
+      this.processing = true;
+    }
+    
+    stopProcessing() {
+      this.processing = false;
+    }
+
+    setAllFieldsData(){
+      this.recordsData = this.allFields;
+      this.currentInfoLabel = 'Fields';
+    }
+
+    setUnusedFieldsData(){
+      this.recordsData = this.unUsedFields;
+      this.currentInfoLabel = this.unUsedFieldsInfoLabel;
+    }
+
+    async retrieveAndSetUnusedFields() {
+      const customFieldIds = this.getCustomFieldIds();
+      const result = await getUnusedFields({ customFieldIds });
+
+      if (result.length > 0) {
+        this.unUsedFields = this.filterUnusedFields(result);
+        this.recordsData = [...this.unUsedFields];
+        this.currentInfoLabel = 'Fields.Unused';
+      }else{
+        this.recordsData = undefined;
+        this.noRecordsFound = true;
+      }
+    }
+
+    getCustomFieldIds() {
+      return this.recordsData
+        .filter(record => record.isCustom)
+        .map(record => record.fieldId);
+    }
+    
+    filterUnusedFields(result) {
+      return this.allFields.filter(record => result.includes(record.fieldId));
     }
 
     async handleInfoChangedMessage(message){
@@ -98,7 +185,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
         result = [...result];
         result.sort(this.sortBy("label", 1))
         //for 'Fields' info
-        if(this.currentInfoLabel === 'Fields'){
+        if(this.currentLabelIsFields){
           result.sort(this.sortBy('isCustom', -1));
           result = result.map((item) => ({ ...item, isStandard: !item.isCustom }));
           this.customFieldsCount = result.reduce(
@@ -106,6 +193,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
             0
           );
           this.standardFieldsCount = result.length - this.customFieldsCount;
+          this.allFields = result;
         }
         this.recordsData = result;
       } catch (error) {
@@ -123,13 +211,10 @@ export default class SObjectFieldsDisplay extends LightningElement {
         //Set variables
         this.sObjectIdOrName = message.sObjectIdOrName;
         this.sObjectName = message.sObjectAPIName;
+        this.allFields = undefined;
+        this.currentInfoLabel = undefined;
+        this.unUsedFields = undefined;
         this.recordsData = undefined;
-    }
-
-    //TODO: This is not dynamic as not all records will have 'isCustom' field
-    handleAskForCurrentFieldsMessage(){
-        let customFields = this.recordsData.filter( record => record.isCustom).map( rec => ( { fieldId: rec.fieldId, apiName: rec.apiName, label: rec.label  } ))
-        publish(this.messageContext, sendCustomFields, { currentCustomFields: customFields });
     }
 
     handleRowAction(event){
@@ -139,10 +224,8 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     disconnectedCallback(){
         unsubscribe(this.sObjectChangedSubscription);
-        unsubscribe(this.askForCurrentFieldsSubscription);
         unsubscribe(this.infoChangedSubscription);
         this.sObjectChangedSubscription = null;
-        this.askForCurrentFieldsSubscription = null;
         this.infoChangedSubscription = null;
     }
 
