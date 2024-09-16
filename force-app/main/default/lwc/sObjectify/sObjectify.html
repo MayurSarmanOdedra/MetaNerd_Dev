@@ -3,7 +3,9 @@
     <div slot="title">SObjectify</div>
     <div slot="actions">
       <template lwc:if={isSObjectSelected}>
-        <lightning-button variant="brand-outline" label="View object in Object Manager" title="View Object in Object Manager" onclick={handleViewSObjectClick}></lightning-button>
+        <lightning-button-group>
+          <lightning-button variant="brand-outline" label="View object in Object Manager" icon-name="utility:open" title="View Object in Object Manager" onclick={handleViewSObjectClick}></lightning-button>
+        </lightning-button-group>
       </template>
     </div>
     <div>

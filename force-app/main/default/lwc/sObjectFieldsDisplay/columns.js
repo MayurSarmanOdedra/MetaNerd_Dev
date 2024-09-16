@@ -93,9 +93,42 @@ const recordTypeColumns = [
         initialWidth: 100
     }
 ];
+const unusedColumns = [
+    {
+      label: "Label",
+      fieldName: "label",
+      wrapText: true,
+    },
+    {
+      label: "API Name",
+      fieldName: "apiName",
+    },
+    {
+      type: "button",
+      typeAttributes: {
+        label: "Where is this used?",
+        name: "view_component",
+        disabled: false,
+        variant: "brand-outline",
+      },
+      initialWidth: 170,
+    },
+    {
+      type: "button",
+      typeAttributes: {
+        label: 'Delete',
+        alternativeText: "Delete",
+        name: "delete_component",
+        disabled: false,
+        variant: "destructive",
+      },
+      initialWidth: 90,
+    },
+];
 
 const columnsByMetadataInfoMap = new Map();
 columnsByMetadataInfoMap.set('Fields', [...fieldColumns]);
+columnsByMetadataInfoMap.set('Fields.Unused', [...unusedColumns]);
 columnsByMetadataInfoMap.set('Page Layouts', [...layoutColumns]);
 columnsByMetadataInfoMap.set('Record Types', [...recordTypeColumns]);
 
