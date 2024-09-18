@@ -63,20 +63,23 @@ const recordTypeColumns = [
         label: 'Label',
         fieldName: 'label',
         sortable: true,
-        wrapText: true
+        wrapText: true,
+        initialWidth: 180
     },
     {
         label: 'API Name',
         fieldName: 'apiName',
         sortable: true,
-        wrapText: true
+        wrapText: true,
+        initialWidth: 180
     },
     {
         label: 'Is Active',
         fieldName: 'isActive',
         sortable: true,
         type: 'boolean',
-        wrapText: true
+        wrapText: true,
+        initialWidth: 100
     },
     {
         label: 'Description',
@@ -107,7 +110,7 @@ const unusedColumns = [
       type: "button",
       typeAttributes: {
         label: "Where is this used?",
-        name: "view_component",
+        name: "where_is_this_used",
         disabled: false,
         variant: "brand-outline",
       },
@@ -118,7 +121,7 @@ const unusedColumns = [
       typeAttributes: {
         label: 'Delete',
         alternativeText: "Delete",
-        name: "delete_component",
+        name: "delete",
         disabled: false,
         variant: "destructive",
       },
@@ -127,9 +130,10 @@ const unusedColumns = [
 ];
 
 const columnsByMetadataInfoMap = new Map();
-columnsByMetadataInfoMap.set('Fields', [...fieldColumns]);
-columnsByMetadataInfoMap.set('Fields.Unused', [...unusedColumns]);
-columnsByMetadataInfoMap.set('Page Layouts', [...layoutColumns]);
-columnsByMetadataInfoMap.set('Record Types', [...recordTypeColumns]);
+columnsByMetadataInfoMap.set('FieldsAndRelationships', [...fieldColumns]);
+columnsByMetadataInfoMap.set('FieldsAndRelationships.Unused', [...unusedColumns]);
+columnsByMetadataInfoMap.set('PageLayouts', [...layoutColumns]);
+columnsByMetadataInfoMap.set('RecordTypes', [...recordTypeColumns]);
+
 
 export { columnsByMetadataInfoMap };

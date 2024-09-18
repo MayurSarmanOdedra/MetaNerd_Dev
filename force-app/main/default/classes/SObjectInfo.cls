@@ -34,12 +34,12 @@ public inherited sharing class SObjectInfo {
 
     public Map<string, integer> getMetadataCountInfo() {
         Map<string, integer> info = new Map<string, integer>();
-        info.put('Fields', getFieldsCount());
-        info.put('Page Layouts', getPageLayoutsCount());
-        info.put('Record Types', getRecordTypesCount());
-        info.put('Validation Rules', getValidationRulesCount());
+        info.put('FieldsAndRelationships', getFieldsCount());
+        info.put('PageLayouts', getPageLayoutsCount());
+        info.put('RecordTypes', getRecordTypesCount());
+        info.put('ValidationRules', getValidationRulesCount());
         info.put('Flows', getFlowsCount());
-        info.put('Triggers', getTriggersCount());
+        info.put('ApexTriggers', getTriggersCount());
 
         return info;
     }
@@ -68,7 +68,7 @@ public inherited sharing class SObjectInfo {
                 string fieldApiName = ((string) recMap.get('DeveloperName')) + CUSTOM_EXTENSION;
                 if(fieldMapByDeveloperName.containsKey(fieldApiName)){
                     FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(fieldApiName);
-                    currentFieldInfo.setFieldId((id) recMap.get('Id'));
+                    currentFieldInfo.setId((id) recMap.get('Id'));
                 }
             }
         }
@@ -85,7 +85,7 @@ public inherited sharing class SObjectInfo {
             for(Object rec : toolingRecs){
                 Map<String, Object> recMap = (Map<String, Object>)rec;
                 LayoutInfo layout = LayoutInfo.builder()
-                                        .setLayoutId((string) recMap.get('Id'))
+                                        .setId((string) recMap.get('Id'))
                                         .setLabel((string) recMap.get('Name'))
                                         .setType((string) recMap.get('LayoutType'));
                 layouts.add(layout);
@@ -102,7 +102,7 @@ public inherited sharing class SObjectInfo {
         if(!records.isEmpty()){
             for(RecordType record : records){
                 RecordTypeInfo recordTypeInfo = RecordTypeInfo.builder()
-                                        .setRecordTypeId(record.Id)
+                                        .setId(record.Id)
                                         .setApiName(record.DeveloperName)
                                         .setLabel(record.Name)
                                         .setIsActive(record.IsActive)

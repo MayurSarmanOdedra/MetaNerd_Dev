@@ -4,22 +4,16 @@
           SObjectify Field References
       </div>
       <div slot="actions">
-        <template lwc:if={showWhereIsThisUsed}>
-          <lightning-button label="Where is this used?" variant="brand-outline" onclick={handleWhereIsThisUsedClick}></lightning-button>
-        </template>
+        <lightning-button label="Where is this used?" variant="brand-outline" onclick={handleWhereIsThisUsedClick}></lightning-button>
       </div>
-      <template lwc:if={fieldId}>
-        <div slot="footer">
-          <c-a-p-i-limitation-text-footer></c-a-p-i-limitation-text-footer>
-        </div>
-      </template>
+      <div slot="footer">
+        <c-a-p-i-limitation-text-footer></c-a-p-i-limitation-text-footer>
+      </div>
       <div class="slds-p-horizontal_medium slds-p-vertical_medium">
         <!-- Card Body  -->
-        <template lwc:if={showWhereIsThisUsed}>
-          <div class="slds-var-p-around_medium">
-            <div class="slds-text-title_caps slds-show_inline">References for ::: </div><lightning-badge label={fieldLabel} class="slds-badge_lightest"></lightning-badge>
-          </div>
-        </template>
+        <div class="slds-var-p-around_medium">
+          <div class="slds-text-title_caps slds-show_inline">References for ::: </div><lightning-badge label={fieldLabel} class="slds-badge_lightest"></lightning-badge>
+        </div>
         <template lwc:if={fieldReferences}>
             <lightning-datatable
               key-field="componentName"
@@ -49,21 +43,6 @@
                 <lightning-button label="Delete" variant='destructive'></lightning-button>
             </lightning-button-group>
           </div>
-        </template>
-        <template lwc:else>
-            <div class="slds-col slds-align_absolute-center slds-p-around_medium">
-              <lightning-icon 
-                icon-name="utility:touch_action" 
-                alternative-text="Connected" 
-                size="large" 
-                title="large size"
-              ></lightning-icon>
-            </div>
-            <div class="slds-align_absolute-center">
-              <p class="slds-text-heading_small slds-p-around_small">
-                Select a field from the <b>SObjectify</b> component, click the '<b>View References</b>' button, and I will show you the references here.
-              </p>
-            </div>
         </template>
       </div>
     </lightning-card>

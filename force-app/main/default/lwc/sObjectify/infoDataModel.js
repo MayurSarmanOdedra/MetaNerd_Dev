@@ -2,34 +2,41 @@
 
 let objectInfo = [
     {
-        name: 'Fields', //from salesforce
+        name: 'FieldsAndRelationships', //from salesforce
         count: 0, //from salesforce
         emoji: '👨‍🌾', //from Jascript
+        label: 'Fields'
     },
     {
-        name: 'Page Layouts', //from salesforce
+        name: 'PageLayouts', //from salesforce
         count: 0, //from salesforce
         emoji: '👨‍⚖️', //from Jascript
+        label: 'Page Layouts'
+
     },
     {
-        name: 'Record Types', //from salesforce
+        name: 'RecordTypes', //from salesforce
         count: 0, //from salesforce
         emoji: '👨‍⚖️', //from Jascript
+        label: 'Record Types'
     },
     {
-        name: 'Validation Rules', //from salesforce
+        name: 'ValidationRules', //from salesforce
         count: 0, //from salesforce
         emoji: '👮‍♂️', //from Jascript
+        label: 'Validation Rules'
     },
     {
-        name: 'Flows', //from salesforce
+        name: 'Flows', //from salesforce -
         count: 0, //from salesforce
         emoji: '🥷', //from Jascript
+        label: 'Flows'
     },
     {
-        name: 'Triggers', //from salesforce
+        name: 'ApexTriggers', //from salesforce
         count: 0, //from salesforce
         emoji: '🧙‍♂️', //from Jascript
+        label: 'Apex Triggers'
     }
 ]
 

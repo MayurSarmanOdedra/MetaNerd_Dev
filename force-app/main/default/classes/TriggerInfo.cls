@@ -1,7 +1,7 @@
 public inherited sharing class TriggerInfo {
     
     @AuraEnabled
-    public id triggerId { get; set; }
+    public id id { get; set; }
     @AuraEnabled
     public string apiName { get; set; }
     @AuraEnabled
@@ -18,8 +18,8 @@ public inherited sharing class TriggerInfo {
         return new TriggerInfo();
     }
 
-    public TriggerInfo setTriggerId(id triggerId){
-        this.triggerId = triggerId;
+    public TriggerInfo setId(id triggerId){
+        this.id = triggerId;
         return this;
     }
 

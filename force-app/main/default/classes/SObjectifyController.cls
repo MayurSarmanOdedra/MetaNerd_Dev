@@ -66,11 +66,11 @@ public with sharing class SObjectifyController {
         SObjectInfo objectInfo = SObjectInfo.getInstance(sObjectName);
         
         // Determine what type of info to return based on the infoType string
-        if (infoType == 'Fields') {
+        if (infoType == 'FieldsAndRelationships') {
             return objectInfo.getFields();
-        } else if (infoType == 'Page Layouts') {
+        } else if (infoType == 'PageLayouts') {
             return objectInfo.getLayouts();
-        } else if (infoType == 'Record Types') {
+        } else if (infoType == 'RecordTypes') {
             return objectInfo.getRecordTypes();
         } else {
             throw new IllegalArgumentException('Invalid infoType: ' + infoType);
