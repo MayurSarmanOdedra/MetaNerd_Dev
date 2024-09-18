@@ -1,7 +1,7 @@
 public inherited sharing class LayoutInfo {
 
     @AuraEnabled
-    public id layoutId { get; set; }
+    public id id { get; set; }
     @AuraEnabled
     public string label { get; set; } 
     @AuraEnabled
@@ -13,8 +13,8 @@ public inherited sharing class LayoutInfo {
         return new LayoutInfo();
     }
 
-    public LayoutInfo setLayoutId(id layoutId){
-        this.layoutId = layoutId;
+    public LayoutInfo setId(id layoutId){
+        this.id = layoutId;
         return this;
     }
 

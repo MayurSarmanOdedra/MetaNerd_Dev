@@ -1,6 +1,6 @@
 public inherited sharing class FieldInfo {
     @AuraEnabled
-    public Id fieldId { get; set; }
+    public Id id { get; set; }
     @AuraEnabled
     public String apiName { get; set; }
     @AuraEnabled
@@ -29,8 +29,8 @@ public inherited sharing class FieldInfo {
         return this;
     }
 
-    public FieldInfo setFieldId(Id fieldId){
-        this.fieldId = fieldId;
+    public FieldInfo setId(Id fieldId){
+        this.id = fieldId;
         return this;
     }
 }

@@ -1,7 +1,7 @@
 public inherited sharing class FlowInfo {
     
     @AuraEnabled
-    public id flowId { get; set; }
+    public id id { get; set; }
     @AuraEnabled
     public string apiName { get; set; }
     @AuraEnabled
@@ -17,8 +17,8 @@ public inherited sharing class FlowInfo {
         return new FlowInfo();
     }
 
-    public FlowInfo setFlowId(id flowId){
-        this.flowId = flowId;
+    public FlowInfo setId(id flowId){
+        this.id = flowId;
         return this;
     }
 

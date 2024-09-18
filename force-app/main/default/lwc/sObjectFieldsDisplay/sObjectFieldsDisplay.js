@@ -13,6 +13,7 @@ import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c
 import selectedFieldId from "@salesforce/messageChannel/sObjectifyFieldReference__c";
 import infoChanged from "@salesforce/messageChannel/sObjectifyInfoChanged__c";
 import getUnusedFields from "@salesforce/apex/SObjectifyController.getUnusedFields";
+import MyModal from 'c/sObjectFieldReferences';
 
 export default class SObjectFieldsDisplay extends LightningElement {
     //Common variables
@@ -33,7 +34,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
     allFields;
     unUsedFields;
     showAllFields = true;
-    unUsedFieldsInfoLabel = 'Fields.Unused';
+    unUsedFieldsInfoLabel = 'FieldsAndRelationships.Unused';
 
     @wire(MessageContext)
     messageContext;
@@ -44,7 +45,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     get currentLabelIsFields(){
-      return this.currentInfoLabel === 'Fields'
+      return this.currentInfoLabel === 'FieldsAndRelationships'
     }
 
     get totalFields() {
@@ -65,6 +66,10 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     get showApiLimitationFooter(){
       return !this.showAllFields && this.unUsedFields;
+    }
+
+    get currentInfoLabelWithoutFilter(){
+      return (this.currentInfoLabel && this.currentInfoLabel.includes('.')) ? this.currentInfoLabel.split('.')[0] : this.currentInfoLabel; 
     }
 
     connectedCallback(){
@@ -127,7 +132,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     setAllFieldsData(){
       this.recordsData = this.allFields;
-      this.currentInfoLabel = 'Fields';
+      this.currentInfoLabel = 'FieldsAndRelationships';
     }
 
     setUnusedFieldsData(){
@@ -142,7 +147,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
       if (result.length > 0) {
         this.unUsedFields = this.filterUnusedFields(result);
         this.recordsData = [...this.unUsedFields];
-        this.currentInfoLabel = 'Fields.Unused';
+        this.currentInfoLabel = 'FieldsAndRelationships.Unused';
       }else{
         this.recordsData = undefined;
         this.noRecordsFound = true;
@@ -152,19 +157,19 @@ export default class SObjectFieldsDisplay extends LightningElement {
     getCustomFieldIds() {
       return this.recordsData
         .filter(record => record.isCustom)
-        .map(record => record.fieldId);
+        .map(record => record.id);
     }
     
     filterUnusedFields(result) {
-      return this.allFields.filter(record => result.includes(record.fieldId));
+      return this.allFields.filter(record => result.includes(record.id));
     }
 
     async handleInfoChangedMessage(message){
-      const fixedInfos = ['Fields', 'Page Layouts', 'Record Types'];
+      this.resetData();
+      const fixedInfos = ['FieldsAndRelationships', 'PageLayouts', 'RecordTypes'];
       this.currentInfoLabel = message.infoLabel;
 
       if(!fixedInfos.includes(this.currentInfoLabel)){
-        this.recordsData = undefined;
         const event = new ShowToastEvent({
           title: 'Info',
           message:
@@ -184,7 +189,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
         });
         result = [...result];
         result.sort(this.sortBy("label", 1))
-        //for 'Fields' info
+        //for 'FieldsAndRelationships' info
         if(this.currentLabelIsFields){
           result.sort(this.sortBy('isCustom', -1));
           result = result.map((item) => ({ ...item, isStandard: !item.isCustom }));
@@ -211,15 +216,60 @@ export default class SObjectFieldsDisplay extends LightningElement {
         //Set variables
         this.sObjectIdOrName = message.sObjectIdOrName;
         this.sObjectName = message.sObjectAPIName;
-        this.allFields = undefined;
-        this.currentInfoLabel = undefined;
-        this.unUsedFields = undefined;
-        this.recordsData = undefined;
+        this.resetData();
+    }
+
+    resetData() {
+      this.allFields = undefined; 
+      this.currentInfoLabel = undefined;
+      this.unUsedFields = undefined;
+      this.recordsData = undefined;
+      this.noRecordsFound = false;
+      this.customFieldsCount = 0;
+      this.standardFieldsCount = 0;
     }
 
     handleRowAction(event){
-        const payload = { selectedFieldAPIName: event.detail.row.apiName, selectedFieldLabel: event.detail.row.label, selectedFieldId: event.detail.row.fieldId, selectedSObjectId: this.sObjectIdOrName };
-        publish(this.messageContext, selectedFieldId, payload);
+      const actionName = event.detail.action.name; // get the action name
+      const row = event.detail.row; // get the row data
+
+      switch (actionName) {
+        case 'view':
+          this.handleViewMetadataRecord(row.id)
+          break;
+        case 'where_is_this_used':
+          this.handleWhereIsThisUsed(row.id); // This will be fields only for now
+          break;
+        case 'view_references':
+          this.handleViewReferences(row);
+          break;
+        default:
+          break;
+      } 
+    }
+
+    handleWhereIsThisUsed(id){
+      window.open(`${this.getMetadataObjectManagerUrl(id)}/fieldDependencies`);
+    }
+
+    handleViewMetadataRecord(id){
+      //Flows will be handled differently than its name
+      window.open(`${this.getMetadataObjectManagerUrl(id)}/view`);
+    }
+
+    getMetadataObjectManagerUrl(id){
+      return `${window.location.origin}/lightning/setup/ObjectManager/${this.sObjectIdOrName}/${this.currentInfoLabelWithoutFilter}/${id.slice(0, -3)}`;
+    }
+
+    handleViewReferences(row){
+      MyModal.open({
+          // `label` is not included here in this example.
+          // it is set on lightning-modal-header instead
+          size: 'medium',
+          description: 'Modal for field references'
+      });
+      const payload = { selectedFieldAPIName: row.apiName, selectedFieldLabel: row.label, selectedFieldId: row.id, selectedSObjectId: this.sObjectIdOrName };
+      publish(this.messageContext, selectedFieldId, payload);
     }
 
     disconnectedCallback(){

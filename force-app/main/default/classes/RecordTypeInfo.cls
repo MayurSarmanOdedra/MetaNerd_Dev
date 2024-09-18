@@ -1,7 +1,7 @@
 public inherited sharing class RecordTypeInfo {
     
     @AuraEnabled
-    public id recordTypeId { get; set; }
+    public id id { get; set; }
     @AuraEnabled
     public string apiName { get; set; }
     @AuraEnabled
@@ -17,8 +17,8 @@ public inherited sharing class RecordTypeInfo {
         return new RecordTypeInfo();
     }
 
-    public RecordTypeInfo setRecordTypeId(id recordTypeId){
-        this.recordTypeId = recordTypeId;
+    public RecordTypeInfo setId(id recordTypeId){
+        this.id = recordTypeId;
         return this;
     }
 
