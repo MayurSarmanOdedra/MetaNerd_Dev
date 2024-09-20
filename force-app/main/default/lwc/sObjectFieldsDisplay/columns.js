@@ -15,8 +15,13 @@ const fieldColumns = [
         label: 'Is Custom?',
         fieldName: 'isCustom',
         sortable: true,
-        type: 'boolean',
-        initialWidth: 140
+        type: 'boolean'
+    },
+    {
+        label: 'Possibly Unused?',
+        fieldName: 'isUnused',
+        sortable: true,
+        type: 'boolean'
     },
     {
         type: 'button',
@@ -63,28 +68,25 @@ const recordTypeColumns = [
         label: 'Label',
         fieldName: 'label',
         sortable: true,
-        wrapText: true,
-        initialWidth: 180
+        wrapText: true
     },
     {
         label: 'API Name',
         fieldName: 'apiName',
         sortable: true,
-        wrapText: true,
-        initialWidth: 180
+        wrapText: true
+    },
+    {
+        label: 'Description',
+        fieldName: 'description',
+        wrapText: true
     },
     {
         label: 'Is Active',
         fieldName: 'isActive',
         sortable: true,
         type: 'boolean',
-        wrapText: true,
         initialWidth: 100
-    },
-    {
-        label: 'Description',
-        fieldName: 'description',
-        wrapText: true
     },
     {
         type: 'button',
@@ -96,6 +98,36 @@ const recordTypeColumns = [
         initialWidth: 100
     }
 ];
+
+const apexTriggerColumns = [
+    {
+        label: 'Label',
+        fieldName: 'label',
+        sortable: true,
+        wrapText: true
+    },
+    {
+        label: 'Trigger Types(s)',
+        fieldName: 'type',
+        wrapText: true
+    },
+    {
+        label: 'Is Active',
+        fieldName: 'isActive',
+        sortable: true,
+        type: 'boolean',
+    },
+    {
+        type: 'button',
+        typeAttributes: {
+            label: 'View',
+            name: 'view',
+            variant: 'brand',
+        },
+        initialWidth: 100
+    }
+];
+
 const unusedColumns = [
     {
       label: "Label",
@@ -134,6 +166,7 @@ columnsByMetadataInfoMap.set('FieldsAndRelationships', [...fieldColumns]);
 columnsByMetadataInfoMap.set('FieldsAndRelationships.Unused', [...unusedColumns]);
 columnsByMetadataInfoMap.set('PageLayouts', [...layoutColumns]);
 columnsByMetadataInfoMap.set('RecordTypes', [...recordTypeColumns]);
+columnsByMetadataInfoMap.set('ApexTriggers', [...apexTriggerColumns]);
 
 
 export { columnsByMetadataInfoMap };

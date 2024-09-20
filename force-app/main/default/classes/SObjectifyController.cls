@@ -1,6 +1,12 @@
 public with sharing class SObjectifyController {
 
-    private static final String CUSTOM_EXTENSION = '__c';
+    private static final string CUSTOM_EXTENSION = '__c';
+    private static final string FIELDS_AND_RELATIONSHIPS_INFO = 'FieldsAndRelationships';
+    private static final string PAGE_LAYOUTS_INFO = 'PageLayouts';
+    private static final string RECORD_TYPES_INFO = 'RecordTypes';
+    private static final string VALIDATION_RULES_INFO = 'ValidationRules';
+    private static final string FLOWS_INFO = 'Flows';
+    private static final string APEX_TRIGGERS_INFO = 'ApexTriggers';
 
     public class SObjectInterface {
         @AuraEnabled
@@ -66,12 +72,14 @@ public with sharing class SObjectifyController {
         SObjectInfo objectInfo = SObjectInfo.getInstance(sObjectName);
         
         // Determine what type of info to return based on the infoType string
-        if (infoType == 'FieldsAndRelationships') {
+        if (infoType == FIELDS_AND_RELATIONSHIPS_INFO) {
             return objectInfo.getFields();
-        } else if (infoType == 'PageLayouts') {
+        } else if (infoType == PAGE_LAYOUTS_INFO) {
             return objectInfo.getLayouts();
-        } else if (infoType == 'RecordTypes') {
+        } else if (infoType == RECORD_TYPES_INFO) {
             return objectInfo.getRecordTypes();
+        } else if (infoType == APEX_TRIGGERS_INFO) {
+            return objectInfo.getApexTriggers();
         } else {
             throw new IllegalArgumentException('Invalid infoType: ' + infoType);
         }
@@ -80,41 +88,13 @@ public with sharing class SObjectifyController {
     @AuraEnabled
     public static List<FieldReferencesInfo> getFieldReferences(String fieldId){
         List<FieldReferencesInfo> fieldRefs = new List<FieldReferencesInfo>();
-        String query = 'SELECT MetadataComponentName, MetadataComponentType FROM MetadataComponentDependency WHERE RefMetadataComponentId = \'' + fieldId + '\'';
-        HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
-        MetadataDependencyToolingResponse toolingRes = (MetadataDependencyToolingResponse) JSON.deserializeStrict(response.getBody(), MetadataDependencyToolingResponse.class);
+        MetadataDependencyToolingResponse toolingRes = SObjectifyHelper.getMetadataDependecies(new List<string> { fieldId });
         if(toolingRes.size > 0){
             for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
                 fieldRefs.add(new FieldReferencesInfo(rec.MetadataComponentName, rec.MetadataComponentType));
             }
         }
         return fieldRefs;
-    }
-
-    @AuraEnabled
-    public static List<String> getUnusedFields(List<String> customFieldIds){
-        try {
-            List<String> modifiedIds = new List<String>();
-            Set<String> fieldIdsWithReferences = new Set<String>();
-            for(String customFieldId : customFieldIds){
-                modifiedIds.add('\'' + customFieldId + '\'');
-            }
-            String query = 'SELECT MetadataComponentName, MetadataComponentType, RefMetadataComponentId FROM MetadataComponentDependency WHERE RefMetadataComponentId IN (' + String.join(modifiedIds, ',') + ')';
-            HttpResponse response = ToolingAPIUtility.queryToolingAPI(query);
-            MetadataDependencyToolingResponse toolingRes = (MetadataDependencyToolingResponse) JSON.deserializeStrict(response.getBody(), MetadataDependencyToolingResponse.class);
-            if(toolingRes.size > 0){
-                for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
-                    fieldIdsWithReferences.add(rec.RefMetadataComponentId);
-                }
-            }
-
-            Set<String> unusedFields = new Set<String>(customFieldIds);
-            unusedFields.removeAll(fieldIdsWithReferences);
-            return new List<String>(unusedFields);
-
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
     }
 }
 
