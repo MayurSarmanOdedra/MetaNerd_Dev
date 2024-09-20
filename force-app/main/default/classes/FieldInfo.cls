@@ -7,11 +7,18 @@ public inherited sharing class FieldInfo {
     public String label { get; set; }
     @AuraEnabled
     public Boolean isCustom { get; set; }
+    @AuraEnabled
+    public Boolean isUnused { get; set; }
 
     private FieldInfo() {}
 
     public static FieldInfo builder(){
         return new FieldInfo();
+    }
+
+    public FieldInfo setId(Id fieldId){
+        this.id = fieldId;
+        return this;
     }
 
     public FieldInfo setApiName(string apiName){
@@ -29,8 +36,8 @@ public inherited sharing class FieldInfo {
         return this;
     }
 
-    public FieldInfo setId(Id fieldId){
-        this.id = fieldId;
+    public FieldInfo setIsUnused(boolean isUnused){
+        this.isUnused = isUnused;
         return this;
     }
 }

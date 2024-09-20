@@ -12,7 +12,6 @@ import {
 import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c';
 import selectedFieldId from "@salesforce/messageChannel/sObjectifyFieldReference__c";
 import infoChanged from "@salesforce/messageChannel/sObjectifyInfoChanged__c";
-import getUnusedFields from "@salesforce/apex/SObjectifyController.getUnusedFields";
 import MyModal from 'c/sObjectFieldReferences';
 
 export default class SObjectFieldsDisplay extends LightningElement {
@@ -27,14 +26,9 @@ export default class SObjectFieldsDisplay extends LightningElement {
     defaultSortDirection = "asc";
     sortDirection = "asc";
     sortedBy = 'label';
-    noRecordsFound = false;
     //Fields related variables
     customFieldsCount = 0;
     standardFieldsCount = 0;
-    allFields;
-    unUsedFields;
-    showAllFields = true;
-    unUsedFieldsInfoLabel = 'FieldsAndRelationships.Unused';
 
     @wire(MessageContext)
     messageContext;
@@ -49,27 +43,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     get totalFields() {
-      return this.currentLabelIsFields ? (Number(this.standardFieldsCount) + Number(this.customFieldsCount)) : null;
-    }
-
-    get showFieldsActions(){
-      return (this.currentLabelIsFields || this.currentInfoLabel === this.unUsedFieldsInfoLabel) && this.customFieldsCount > 0;
-    }
-
-    get showAllFieldsClicked(){
-      return this.showAllFields;
-    }
-
-    get alreadyRetrievedUnusedFields(){
-      return this.unUsedFields;
-    }
-
-    get showApiLimitationFooter(){
-      return !this.showAllFields && this.unUsedFields;
-    }
-
-    get currentInfoLabelWithoutFilter(){
-      return (this.currentInfoLabel && this.currentInfoLabel.includes('.')) ? this.currentInfoLabel.split('.')[0] : this.currentInfoLabel; 
+      return Number(this.standardFieldsCount) + Number(this.customFieldsCount);
     }
 
     connectedCallback(){
@@ -90,37 +64,6 @@ export default class SObjectFieldsDisplay extends LightningElement {
           )
       }
     }
-
-    async handleFieldsFilter(event){
-      if (event.target.variant === 'brand') return;
-
-      this.toggleShowAllFields();
-      this.updateButtonVariants();
-
-      this.startProcessing();
-
-      if (this.showAllFieldsClicked) {
-        this.setAllFieldsData();
-      } else if (this.alreadyRetrievedUnusedFields) {
-        this.setUnusedFieldsData();
-      } else {
-        await this.retrieveAndSetUnusedFields();
-      }
-
-      this.stopProcessing();
-    }
-
-    toggleShowAllFields() {
-      this.showAllFields = !this.showAllFields;
-    }
-    
-    updateButtonVariants() {
-      const unusedFieldsVariant = this.showAllFields ? 'brand-outline' : 'brand';
-      const allFieldsVariant = this.showAllFields ? 'brand' : 'brand-outline';
-    
-      this.refs.showUnusedFieldsButton.variant = unusedFieldsVariant;
-      this.refs.showAllFieldsButton.variant = allFieldsVariant;
-    }
     
     startProcessing() {
       this.processing = true;
@@ -130,43 +73,15 @@ export default class SObjectFieldsDisplay extends LightningElement {
       this.processing = false;
     }
 
-    setAllFieldsData(){
-      this.recordsData = this.allFields;
-      this.currentInfoLabel = 'FieldsAndRelationships';
-    }
-
-    setUnusedFieldsData(){
-      this.recordsData = this.unUsedFields;
-      this.currentInfoLabel = this.unUsedFieldsInfoLabel;
-    }
-
-    async retrieveAndSetUnusedFields() {
-      const customFieldIds = this.getCustomFieldIds();
-      const result = await getUnusedFields({ customFieldIds });
-
-      if (result.length > 0) {
-        this.unUsedFields = this.filterUnusedFields(result);
-        this.recordsData = [...this.unUsedFields];
-        this.currentInfoLabel = 'FieldsAndRelationships.Unused';
-      }else{
-        this.recordsData = undefined;
-        this.noRecordsFound = true;
-      }
-    }
-
     getCustomFieldIds() {
       return this.recordsData
         .filter(record => record.isCustom)
         .map(record => record.id);
     }
-    
-    filterUnusedFields(result) {
-      return this.allFields.filter(record => result.includes(record.id));
-    }
 
     async handleInfoChangedMessage(message){
       this.resetData();
-      const fixedInfos = ['FieldsAndRelationships', 'PageLayouts', 'RecordTypes'];
+      const fixedInfos = ['FieldsAndRelationships', 'PageLayouts', 'RecordTypes', 'ApexTriggers'];
       this.currentInfoLabel = message.infoLabel;
 
       if(!fixedInfos.includes(this.currentInfoLabel)){
@@ -181,7 +96,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
       }
 
       //Start processing
-      this.processing = true;
+      this.startProcessing();
       try {
         let result = await getSObjectMetadataInfo({
           sObjectName: this.sObjectName,
@@ -198,7 +113,6 @@ export default class SObjectFieldsDisplay extends LightningElement {
             0
           );
           this.standardFieldsCount = result.length - this.customFieldsCount;
-          this.allFields = result;
         }
         this.recordsData = result;
       } catch (error) {
@@ -209,7 +123,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
         );
       }
       //stop processing
-      this.processing = false;
+      this.stopProcessing();
     }
 
     handleSObjectComboChange(message){
@@ -220,11 +134,8 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     resetData() {
-      this.allFields = undefined; 
       this.currentInfoLabel = undefined;
-      this.unUsedFields = undefined;
       this.recordsData = undefined;
-      this.noRecordsFound = false;
       this.customFieldsCount = 0;
       this.standardFieldsCount = 0;
     }
@@ -280,13 +191,13 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     onHandleSort(event) {
-        const { fieldName: sortedBy, sortDirection } = event.detail;
-        const cloneData = [...this.recordsData];
-    
-        cloneData.sort(this.sortBy(sortedBy, sortDirection === "asc" ? 1 : -1));
-        this.recordsData = cloneData;
-        this.sortDirection = sortDirection;
-        this.sortedBy = sortedBy;
+      const { fieldName: sortedBy, sortDirection } = event.detail;
+      const cloneData = [...this.recordsData];
+  
+      cloneData.sort(this.sortBy(sortedBy, sortDirection === "asc" ? 1 : -1));
+      this.recordsData = cloneData;
+      this.sortDirection = sortDirection;
+      this.sortedBy = sortedBy;
     }
 
     sortBy(field, reverse, primer) {

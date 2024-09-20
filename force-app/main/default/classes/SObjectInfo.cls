@@ -46,6 +46,7 @@ public inherited sharing class SObjectInfo {
 
     public List<FieldInfo> getFields(){
         Map<String, FieldInfo> fieldMapByDeveloperName = new Map<String, FieldInfo>();
+        List<string> customFieldIds = new List<string>();
         Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap();
         
         for (String fieldName : fieldMap.keySet()) {
@@ -56,6 +57,7 @@ public inherited sharing class SObjectInfo {
                                         .setApiName(field.getName())
                                         .setLabel(field.getLabel())
                                         .setIsCustom(field.isCustom());
+            //Add to fields map
             fieldMapByDeveloperName.put(field.getName(), fieldInfo);
         }
 
@@ -65,13 +67,36 @@ public inherited sharing class SObjectInfo {
         if(toolingRecs.size() > 0){
             for (Object rec : toolingRecs) {
                 Map<String, Object> recMap = (Map<String, Object>)rec;
-                string fieldApiName = ((string) recMap.get('DeveloperName')) + CUSTOM_EXTENSION;
-                if(fieldMapByDeveloperName.containsKey(fieldApiName)){
-                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(fieldApiName);
+                string qualifiedApiName = ((string) recMap.get('DeveloperName')) + CUSTOM_EXTENSION;
+                if(fieldMapByDeveloperName.containsKey(qualifiedApiName)){
+                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(qualifiedApiName);
                     currentFieldInfo.setId((id) recMap.get('Id'));
+                    customFieldIds.add((string) recMap.get('Id'));
                 }
             }
         }
+
+        //Query metadata dependencies for unused fields
+        try {
+            MetadataDependencyToolingResponse toolingRes = SObjectifyHelper.getMetadataDependecies(customFieldIds);
+            
+            if(toolingRes.size > 0){
+                //Remove used field ids from the 'customFieldIds' variable
+                for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
+                    integer fieldIndex = customFieldIds.indexOf(rec.RefMetadataComponentId);
+                    if(fieldIndex != -1){
+                        customFieldIds.remove(fieldIndex);
+                    }
+                }
+
+                for(FieldInfo f : fieldMapByDeveloperName.values()){
+                    f.setIsUnused(customFieldIds.contains(f.id) ? true : false);
+                }
+            }
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+
         return fieldMapByDeveloperName.values();
     }
 
@@ -117,8 +142,65 @@ public inherited sharing class SObjectInfo {
 
     }
 
-    public void getTriggers(){
+    public List<TriggerInfo> getApexTriggers(){
+        List<TriggerInfo> apexTriggers = new List<TriggerInfo>();
+        List<ApexTrigger> triggers = [SELECT Id, 
+                                            Name, 
+                                            Status, 
+                                            TableEnumOrId,  
+                                            UsageBeforeInsert, 
+                                            UsageAfterInsert, 
+                                            UsageBeforeUpdate, 
+                                            UsageAfterUpdate, 
+                                            UsageBeforeDelete, 
+                                            UsageAfterDelete,
+                                            UsageAfterUndelete 
+                                    FROM ApexTrigger 
+                                    WHERE TableEnumOrId = :sObjectName];
+        
+        if(!triggers.isEmpty()){
+            for(ApexTrigger t : triggers){
+                List<string> triggerTypes = new List<string>();
+                TriggerInfo triggerInfo = TriggerInfo.builder()
+                                                .setId(t.Id)
+                                                .setApiName(t.Name)
+                                                .setLabel(t.Name)
+                                                .setIsActive(t.Status == 'Active' ? true : false);
+                //Set Trigger Type logic
+                if(t.UsageBeforeInsert){
+                    triggerTypes.add('Before Insert');
+                }
 
+                if(t.UsageAfterInsert){
+                    triggerTypes.add('After Insert');
+                }
+
+                if(t.UsageBeforeUpdate){
+                    triggerTypes.add('Before Update');
+                }
+
+                if(t.UsageAfterUpdate){
+                    triggerTypes.add('After Update');
+                }
+
+                if(t.UsageBeforeDelete){
+                    triggerTypes.add('Before Delete');
+                }
+
+                if(t.UsageAfterDelete){
+                    triggerTypes.add('After Delete');
+                }
+
+                if(t.UsageAfterUndelete){
+                    triggerTypes.add('After Undelete');
+                }
+
+                triggerInfo.setType(string.join(triggerTypes, ', '));
+                apexTriggers.add(triggerInfo);
+            }
+        }
+
+        return apexTriggers;
     }
 
     private string stringWithSingleQuotes(string stringToConvert){
