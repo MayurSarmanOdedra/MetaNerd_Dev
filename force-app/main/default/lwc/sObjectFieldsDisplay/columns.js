@@ -31,7 +31,9 @@ const fieldColumns = [
             disabled: {
                 fieldName: 'isStandard'
             },
-            variant: 'brand',
+            variant: {
+                fieldName: 'buttonBrand'
+            },
         },
         initialWidth: 170
 

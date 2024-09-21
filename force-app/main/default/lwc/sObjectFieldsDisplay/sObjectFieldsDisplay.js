@@ -107,7 +107,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
         //for 'FieldsAndRelationships' info
         if(this.currentLabelIsFields){
           result.sort(this.sortBy('isCustom', -1));
-          result = result.map((item) => ({ ...item, isStandard: !item.isCustom }));
+          result = result.map((item) => ({ ...item, isStandard: !item.isCustom, buttonBrand: (item.isUnused) ? 'destructive' : 'brand' }));
           this.customFieldsCount = result.reduce(
             (accumulator, field) => accumulator + (field.isCustom ? 1 : 0),
             0
@@ -169,7 +169,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     getMetadataObjectManagerUrl(id){
-      return `${window.location.origin}/lightning/setup/ObjectManager/${this.sObjectIdOrName}/${this.currentInfoLabelWithoutFilter}/${id.slice(0, -3)}`;
+      return `${window.location.origin}/lightning/setup/ObjectManager/${this.sObjectIdOrName}/${this.currentInfoLabel}/${id.slice(0, -3)}`;
     }
 
     handleViewReferences(row){
