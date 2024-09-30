@@ -1,35 +1,16 @@
-public inherited sharing class RecordTypeInfo {
+public inherited sharing class RecordTypeInfo extends MetadataInfo {
     
-    @AuraEnabled
-    public id id { get; set; }
-    @AuraEnabled
-    public string apiName { get; set; }
-    @AuraEnabled
-    public string label { get; set; }
     @AuraEnabled
     public boolean isActive { get; set; }  
     @AuraEnabled
     public string description { get; set; } 
 
-    private RecordTypeInfo() {}
-
-    public static RecordTypeInfo builder(){
-        return new RecordTypeInfo();
+    private RecordTypeInfo(id id, string apiName, string label) {
+        super(id, apiName, label);
     }
 
-    public RecordTypeInfo setId(id recordTypeId){
-        this.id = recordTypeId;
-        return this;
-    }
-
-    public RecordTypeInfo setApiName(string apiName){
-        this.apiName = apiName;
-        return this;
-    }
-
-    public RecordTypeInfo setLabel(string label){
-        this.label = label;
-        return this;
+    public static RecordTypeInfo builder(id id, string apiName, string label){
+        return new RecordTypeInfo(id, apiName, label);
     }
 
     public RecordTypeInfo setIsActive(boolean isActive){

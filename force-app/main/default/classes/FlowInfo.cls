@@ -1,35 +1,16 @@
-public inherited sharing class FlowInfo {
+public inherited sharing class FlowInfo extends MetadataInfo {
     
-    @AuraEnabled
-    public id id { get; set; }
-    @AuraEnabled
-    public string apiName { get; set; }
-    @AuraEnabled
-    public string label { get; set; }
     @AuraEnabled
     public boolean isActive { get; set; }  
     @AuraEnabled
     public integer totalVersions { get; set; }  
 
-    private FlowInfo() {}
-
-    public static FlowInfo builder(){
-        return new FlowInfo();
+    private FlowInfo(id id, string apiName, string label) {
+        super(id, apiName, label);
     }
 
-    public FlowInfo setId(id flowId){
-        this.id = flowId;
-        return this;
-    }
-
-    public FlowInfo setApiName(string apiName){
-        this.apiName = apiName;
-        return this;
-    }
-
-    public FlowInfo setLabel(string label){
-        this.label = label;
-        return this;
+    public static FlowInfo builder(id id, string apiName, string label){
+        return new FlowInfo(id, apiName, label);
     }
 
     public FlowInfo setIsActive(boolean isActive){

@@ -45,6 +45,9 @@ public with sharing class SObjectifyController {
                 sobjectList.add(sSObjectInfo);
             }
         }
+
+        //clear globalDescribe
+        globalDescribe.clear();
         
         return sobjectList;
     }
@@ -80,7 +83,10 @@ public with sharing class SObjectifyController {
             return objectInfo.getRecordTypes();
         } else if (infoType == APEX_TRIGGERS_INFO) {
             return objectInfo.getApexTriggers();
-        } else {
+        } else if(infoType == VALIDATION_RULES_INFO) {
+            return objectInfo.getValidationRules();
+        }
+        else {
             throw new IllegalArgumentException('Invalid infoType: ' + infoType);
         }
     }
@@ -88,11 +94,8 @@ public with sharing class SObjectifyController {
     @AuraEnabled
     public static List<FieldReferencesInfo> getFieldReferences(String fieldId){
         List<FieldReferencesInfo> fieldRefs = new List<FieldReferencesInfo>();
-        MetadataDependencyToolingResponse toolingRes = SObjectifyHelper.getMetadataDependecies(new List<string> { fieldId });
-        if(toolingRes.size > 0){
-            for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
-                fieldRefs.add(new FieldReferencesInfo(rec.MetadataComponentName, rec.MetadataComponentType));
-            }
+        for(MetadataDependencyToolingResponse.Record rec : (SObjectifyHelper.getMetadataDependecies(new List<string> { fieldId })).records){
+            fieldRefs.add(new FieldReferencesInfo(rec.MetadataComponentName, rec.MetadataComponentType));
         }
         return fieldRefs;
     }

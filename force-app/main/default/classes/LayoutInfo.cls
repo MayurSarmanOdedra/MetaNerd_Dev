@@ -1,31 +1,18 @@
-public inherited sharing class LayoutInfo {
+public inherited sharing class LayoutInfo extends MetadataInfo {
 
-    @AuraEnabled
-    public id id { get; set; }
-    @AuraEnabled
-    public string label { get; set; } 
     @AuraEnabled
     public string type { get; set; } 
 
-    private LayoutInfo() {}
-
-    public static LayoutInfo builder(){
-        return new LayoutInfo();
+    private LayoutInfo(id id, string apiName, string label) {
+        super(id, apiName, label);
     }
 
-    public LayoutInfo setId(id layoutId){
-        this.id = layoutId;
-        return this;
-    }
-
-    public LayoutInfo setLabel(string label){
-        this.label = label;
-        return this;
+    public static LayoutInfo builder(id id, string apiName, string label){
+        return new LayoutInfo(id, apiName, label);
     }
 
     public LayoutInfo setType(string type){
         this.type = type;
         return this;
     }
-
 }

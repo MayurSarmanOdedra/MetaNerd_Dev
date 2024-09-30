@@ -1,38 +1,18 @@
-public inherited sharing class TriggerInfo {
-    
-    @AuraEnabled
-    public id id { get; set; }
-    @AuraEnabled
-    public string apiName { get; set; }
-    @AuraEnabled
-    public string label { get; set; }
+public inherited sharing class TriggerInfo extends MetadataInfo {
+
     @AuraEnabled
     public boolean isActive { get; set; }
     @AuraEnabled
     public string type { get; set; }
 
-
-    private TriggerInfo() {}
-
-    public static TriggerInfo builder(){
-        return new TriggerInfo();
+    private TriggerInfo(id id, string apiName, string label) {
+        super(id, apiName, label);
     }
 
-    public TriggerInfo setId(id triggerId){
-        this.id = triggerId;
-        return this;
+    public static TriggerInfo builder(id id, string apiName, string label){
+        return new TriggerInfo(id, apiName, label);
     }
-
-    public TriggerInfo setApiName(string apiName){
-        this.apiName = apiName;
-        return this;
-    }
-
-    public TriggerInfo setLabel(string label){
-        this.label = label;
-        return this;
-    }
-
+    
     public TriggerInfo setIsActive(boolean isActive){
         this.isActive = isActive;
         return this;
