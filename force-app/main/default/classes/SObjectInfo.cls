@@ -2,6 +2,14 @@ public inherited sharing class SObjectInfo {
     
     private string sObjectName;
     private string customSObjectId;
+
+    Map<string, integer> countInfo = new Map<string, integer>();
+    private List<FieldInfo> thisFieldInfo = new List<FieldInfo>();
+    private List<LayoutInfo> thisLayoutInfo = new List<LayoutInfo>();
+    private List<RecordTypeInfo> thisRecordTypeInfo = new List<RecordTypeInfo>();
+    private List<ValidationRuleInfo> thisValidationRuleInfo = new List<ValidationRuleInfo>();
+    private List<TriggerInfo> thisTriggerInfo = new List<TriggerInfo>();
+
     private static final string CUSTOM_EXTENSION = '__c';
     private static final list<string> FLOW_PROCESS_TYPES = new list<string>{ 'AutoLaunchedFlow','CheckoutFlow','Flow' };
     private static final list<string> FLOW_TRIGGER_TYPES = new list<string>{ 'RecordBeforeSave', 'RecordAfterSave', 'RecordBeforeDelete' };
@@ -20,6 +28,10 @@ public inherited sharing class SObjectInfo {
         return instance;
     }
 
+    private string stringWithSingleQuotes(string stringToConvert){
+        return '\''+stringToConvert+'\'';
+    } 
+
     public string getCustomObjectId(){
         if(!sObjectName.endsWith(CUSTOM_EXTENSION)){  return sObjectName; }
 
@@ -33,179 +45,16 @@ public inherited sharing class SObjectInfo {
     }
 
     public Map<string, integer> getMetadataCountInfo() {
-        Map<string, integer> info = new Map<string, integer>();
-        info.put('FieldsAndRelationships', getFieldsCount());
-        info.put('PageLayouts', getPageLayoutsCount());
-        info.put('RecordTypes', getRecordTypesCount());
-        info.put('ValidationRules', getValidationRulesCount());
-        info.put('Flows', getFlowsCount());
-        info.put('ApexTriggers', getTriggersCount());
-
-        return info;
-    }
-
-    public List<FieldInfo> getFields(){
-        Map<String, FieldInfo> fieldMapByDeveloperName = new Map<String, FieldInfo>();
-        List<string> customFieldIds = new List<string>();
-        Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap();
-        
-        for (String fieldName : fieldMap.keySet()) {
-            Schema.DescribeFieldResult field = fieldMap.get(fieldName).getDescribe();
-            
-            //Add to field info
-            FieldInfo fieldInfo = FieldInfo.builder()
-                                        .setApiName(field.getName())
-                                        .setLabel(field.getLabel())
-                                        .setIsCustom(field.isCustom());
-            //Add to fields map
-            fieldMapByDeveloperName.put(field.getName(), fieldInfo);
+        if(countInfo.isEmpty()){
+            countInfo.put('FieldsAndRelationships', getFieldsCount());
+            countInfo.put('PageLayouts', getPageLayoutsCount());
+            countInfo.put('RecordTypes', getRecordTypesCount());
+            countInfo.put('ValidationRules', getValidationRulesCount());
+            countInfo.put('Flows', getFlowsCount());
+            countInfo.put('ApexTriggers', getTriggersCount());
         }
-
-        //Query the field definition tooling api
-        String query = 'SELECT Id, DeveloperName from CustomField WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
-        List<object> toolingRecs = getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query));
-        if(toolingRecs.size() > 0){
-            for (Object rec : toolingRecs) {
-                Map<String, Object> recMap = (Map<String, Object>)rec;
-                string qualifiedApiName = ((string) recMap.get('DeveloperName')) + CUSTOM_EXTENSION;
-                if(fieldMapByDeveloperName.containsKey(qualifiedApiName)){
-                    FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(qualifiedApiName);
-                    currentFieldInfo.setId((id) recMap.get('Id'));
-                    customFieldIds.add((string) recMap.get('Id'));
-                }
-            }
-        }
-
-        //Query metadata dependencies for unused fields
-        try {
-            MetadataDependencyToolingResponse toolingRes = SObjectifyHelper.getMetadataDependecies(customFieldIds);
-            
-            if(toolingRes.size > 0){
-                //Remove used field ids from the 'customFieldIds' variable
-                for(MetadataDependencyToolingResponse.Record rec : toolingRes.records){
-                    integer fieldIndex = customFieldIds.indexOf(rec.RefMetadataComponentId);
-                    if(fieldIndex != -1){
-                        customFieldIds.remove(fieldIndex);
-                    }
-                }
-
-                for(FieldInfo f : fieldMapByDeveloperName.values()){
-                    f.setIsUnused(customFieldIds.contains(f.id) ? true : false);
-                }
-            }
-        } catch (Exception e) {
-            throw new AuraHandledException(e.getMessage());
-        }
-
-        return fieldMapByDeveloperName.values();
+        return countInfo;
     }
-
-    public List<LayoutInfo> getLayouts(){
-        List<LayoutInfo> layouts = new List<LayoutInfo>();
-        //Query the layouts using tooling api
-        String query = 'SELECT Id, Name, LayoutType FROM Layout WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
-        List<object> toolingRecs = getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query));
-        
-        if(toolingRecs.size() > 0){
-            for(Object rec : toolingRecs){
-                Map<String, Object> recMap = (Map<String, Object>)rec;
-                LayoutInfo layout = LayoutInfo.builder()
-                                        .setId((string) recMap.get('Id'))
-                                        .setLabel((string) recMap.get('Name'))
-                                        .setType((string) recMap.get('LayoutType'));
-                layouts.add(layout);
-            } 
-        }
-        return layouts;
-    }
-
-    public List<RecordTypeInfo> getRecordTypes(){
-        List<RecordTypeInfo> recordTypes = new List<RecordTypeInfo>();
-
-        List<RecordType> records = [SELECT Id,Name,DeveloperName,Description,IsActive FROM RecordType WHERE SobjectType = :sObjectName];
-
-        if(!records.isEmpty()){
-            for(RecordType record : records){
-                RecordTypeInfo recordTypeInfo = RecordTypeInfo.builder()
-                                        .setId(record.Id)
-                                        .setApiName(record.DeveloperName)
-                                        .setLabel(record.Name)
-                                        .setIsActive(record.IsActive)
-                                        .setDescription(record.Description);
-                recordTypes.add(recordTypeInfo);
-            }
-        }
-        return recordTypes;
-    }
-
-    public void getValidationRules(){
-
-    }
-
-    public List<TriggerInfo> getApexTriggers(){
-        List<TriggerInfo> apexTriggers = new List<TriggerInfo>();
-        List<ApexTrigger> triggers = [SELECT Id, 
-                                            Name, 
-                                            Status, 
-                                            TableEnumOrId,  
-                                            UsageBeforeInsert, 
-                                            UsageAfterInsert, 
-                                            UsageBeforeUpdate, 
-                                            UsageAfterUpdate, 
-                                            UsageBeforeDelete, 
-                                            UsageAfterDelete,
-                                            UsageAfterUndelete 
-                                    FROM ApexTrigger 
-                                    WHERE TableEnumOrId = :sObjectName];
-        
-        if(!triggers.isEmpty()){
-            for(ApexTrigger t : triggers){
-                List<string> triggerTypes = new List<string>();
-                TriggerInfo triggerInfo = TriggerInfo.builder()
-                                                .setId(t.Id)
-                                                .setApiName(t.Name)
-                                                .setLabel(t.Name)
-                                                .setIsActive(t.Status == 'Active' ? true : false);
-                //Set Trigger Type logic
-                if(t.UsageBeforeInsert){
-                    triggerTypes.add('Before Insert');
-                }
-
-                if(t.UsageAfterInsert){
-                    triggerTypes.add('After Insert');
-                }
-
-                if(t.UsageBeforeUpdate){
-                    triggerTypes.add('Before Update');
-                }
-
-                if(t.UsageAfterUpdate){
-                    triggerTypes.add('After Update');
-                }
-
-                if(t.UsageBeforeDelete){
-                    triggerTypes.add('Before Delete');
-                }
-
-                if(t.UsageAfterDelete){
-                    triggerTypes.add('After Delete');
-                }
-
-                if(t.UsageAfterUndelete){
-                    triggerTypes.add('After Undelete');
-                }
-
-                triggerInfo.setType(string.join(triggerTypes, ', '));
-                apexTriggers.add(triggerInfo);
-            }
-        }
-
-        return apexTriggers;
-    }
-
-    private string stringWithSingleQuotes(string stringToConvert){
-        return '\''+stringToConvert+'\'';
-    } 
 
     private List<object> getToolingResponseRecords(HttpResponse response){
         Map<string, object> responseBody = (Map<string, object>)JSON.deserializeUntyped(response.getBody());
@@ -237,7 +86,10 @@ public inherited sharing class SObjectInfo {
                                         AND TriggerObjectOrEventId != null 
                                         AND TriggerType IN :FLOW_TRIGGER_TYPES 
                                         AND TriggerObjectOrEvent.QualifiedApiName = :sObjectName];
-        return flows.size();
+
+        Integer totalSize = flows.size();
+        flows.clear();
+        return totalSize;
     }
 
     private integer getTriggersCount(){
@@ -246,7 +98,186 @@ public inherited sharing class SObjectInfo {
 
     private integer getCountFromToolingResponse(HttpResponse response){
         Map<string, object> responseDeserialized = (Map<string, object>) JSON.deserializeUntyped(response.getBody());
-        return (integer)responseDeserialized.get('size');
+        Integer totalCount = (integer)responseDeserialized.get('size');
+        //clear response
+        responseDeserialized.clear();
+        return totalCount;
     }
 
+    public List<FieldInfo> getFields(){
+        if(thisFieldInfo.isEmpty()){
+            Map<String, FieldInfo> fieldMapByDeveloperName = new Map<String, FieldInfo>();
+            List<string> customFieldIds = new List<string>();
+            
+            //organize info
+            createFieldInfo(fieldMapByDeveloperName);
+            setCustomFieldIds(fieldMapByDeveloperName, customFieldIds);
+            //set unused fields only if theere are custom fields
+            if(!customFieldIds.isEmpty()){
+                setUnusedFields(fieldMapByDeveloperName, customFieldIds);
+            }
+            
+            //assign to this object
+            thisFieldInfo = fieldMapByDeveloperName.values();
+            
+            //clear values
+            fieldMapByDeveloperName.clear();
+            customFieldIds.clear();
+        }
+        
+        return thisFieldInfo;
+    }
+
+    //helper for fieldInfo
+    private void createFieldInfo(Map<string, FieldInfo> fieldMapByDeveloperName){
+        Map<String, Schema.SObjectField> fieldMap = Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap();
+        for (String fieldName : fieldMap.keySet()) {
+            Schema.DescribeFieldResult field = fieldMap.get(fieldName).getDescribe();
+            
+            //Add to field info
+            FieldInfo fieldInfo = FieldInfo.builder(null, field.getName(), field.getLabel())
+                                    .setIsCustom(field.isCustom());
+            //Add to fields map
+            fieldMapByDeveloperName.put(field.getName(), fieldInfo);
+        }
+        //clear fieldMap
+        fieldMap.clear();
+    }
+
+    //helper for fieldInfo
+    private void setCustomFieldIds(Map<string, FieldInfo> fieldMapByDeveloperName, List<string> customFieldIds){
+         //Query the field definition tooling api
+        String query = 'SELECT Id, DeveloperName from CustomField WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
+        for (Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))) {
+            Map<String, Object> recMap = (Map<String, Object>)rec;
+            string qualifiedApiName = ((string) recMap.get('DeveloperName')) + CUSTOM_EXTENSION;
+            if(fieldMapByDeveloperName.containsKey(qualifiedApiName)){
+                FieldInfo currentFieldInfo = fieldMapByDeveloperName.get(qualifiedApiName);
+                Id recordId = (id) recMap.get('Id');
+                currentFieldInfo.setId(recordId);
+                customFieldIds.add(recordId);
+            }
+        }
+    }
+
+    //helper for fieldInfo
+    private void setUnusedFields(Map<string, FieldInfo> fieldMapByDeveloperName, List<string> customFieldIds){
+        try {
+            for(MetadataDependencyToolingResponse.Record rec : (SObjectifyHelper.getMetadataDependecies(customFieldIds)).records){
+                integer fieldIndex = customFieldIds.indexOf(rec.RefMetadataComponentId);
+                if(fieldIndex != -1){
+                    customFieldIds.remove(fieldIndex);
+                }
+            }
+
+            for(FieldInfo f : fieldMapByDeveloperName.values()){
+                f.setIsUnused(customFieldIds.contains(f.id) ? true : false);
+            }
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
+
+    public List<LayoutInfo> getLayouts(){
+        if(thisLayoutInfo.isEmpty()){
+            //Query the layouts using tooling api
+            String query = 'SELECT Id, Name, LayoutType FROM Layout WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
+            for(Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))){
+                Map<String, Object> recMap = (Map<String, Object>)rec;
+                //extract id, name, and layouttype
+                id id = (id) recMap.get('Id');
+                string label = (string) recMap.get('Name');
+                string type = (string) recMap.get('LayoutType');
+                //add to layoutinfo list
+                thisLayoutInfo.add(LayoutInfo.builder(id, label, label).setType(type));            
+            }
+        }
+        return thisLayoutInfo;
+    }
+
+    public List<RecordTypeInfo> getRecordTypes(){
+        if(thisRecordTypeInfo.isEmpty()){
+            for(RecordType record : [SELECT Id,Name,DeveloperName,Description,IsActive FROM RecordType WHERE SobjectType = :sObjectName]){
+                thisRecordTypeInfo.add(RecordTypeInfo.builder(record.Id, record.DeveloperName, record.Name)
+                                            .setIsActive(record.IsActive)
+                                            .setDescription(record.Description));
+            }
+        }
+        return thisRecordTypeInfo;
+    }
+
+    public List<ValidationRuleInfo> getValidationRules(){
+        if(thisValidationRuleInfo.isEmpty()){
+            string query = 'SELECT Id, ValidationName, ErrorMessage, ErrorDisplayField, Active FROM ValidationRule WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
+            for(Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))){
+                Map<String, Object> recMap = (Map<String, Object>)rec;
+                //extract info
+                id id = (id) recMap.get('Id');
+                string label = (string) recMap.get('ValidationName');
+                string errorMessage = (string) recMap.get('ErrorMessage');
+                boolean isActive = (boolean) recMap.get('Active');
+                string errorDisplayField = (string) recMap.get('ErrorDisplayField');
+                //add to validationInfo
+                thisValidationRuleInfo.add(ValidationRuleInfo.builder(id, label, label)
+                                                .setIsActive(isActive)
+                                                .setErrorMessage(errorMessage)
+                                                .setErrorField(errorDisplayField));
+            }
+            system.debug(thisValidationRuleInfo);
+        }
+        return thisValidationRuleInfo;
+     }
+
+    public List<TriggerInfo> getApexTriggers(){
+        if(thisTriggerInfo.isEmpty()){
+            for(ApexTrigger t : [SELECT Id, 
+                                    Name, 
+                                    Status, 
+                                    TableEnumOrId,  
+                                    UsageBeforeInsert, 
+                                    UsageAfterInsert, 
+                                    UsageBeforeUpdate, 
+                                    UsageAfterUpdate, 
+                                    UsageBeforeDelete, 
+                                    UsageAfterDelete,
+                                    UsageAfterUndelete 
+                            FROM ApexTrigger 
+                            WHERE TableEnumOrId = :sObjectName]){
+                List<string> triggerTypes = new List<string>();
+                //Set Trigger Type logic
+                if(t.UsageBeforeInsert){
+                    triggerTypes.add('Before Insert');
+                }
+
+                if(t.UsageAfterInsert){
+                    triggerTypes.add('After Insert');
+                }
+
+                if(t.UsageBeforeUpdate){
+                    triggerTypes.add('Before Update');
+                }
+
+                if(t.UsageAfterUpdate){
+                    triggerTypes.add('After Update');
+                }
+
+                if(t.UsageBeforeDelete){
+                    triggerTypes.add('Before Delete');
+                }
+
+                if(t.UsageAfterDelete){
+                    triggerTypes.add('After Delete');
+                }
+
+                if(t.UsageAfterUndelete){
+                    triggerTypes.add('After Undelete');
+                }
+
+                thisTriggerInfo.add(TriggerInfo.builder(t.Id, t.Name, t.Name)
+                                        .setIsActive(t.Status == 'Active' ? true : false)
+                                        .setType(string.join(triggerTypes, ', ')));
+            }
+        }
+        return thisTriggerInfo;
+    }
 }

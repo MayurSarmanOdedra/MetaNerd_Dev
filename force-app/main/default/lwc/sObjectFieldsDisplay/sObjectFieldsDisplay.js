@@ -81,7 +81,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     async handleInfoChangedMessage(message){
       this.resetData();
-      const fixedInfos = ['FieldsAndRelationships', 'PageLayouts', 'RecordTypes', 'ApexTriggers'];
+      const fixedInfos = ['FieldsAndRelationships', 'PageLayouts', 'RecordTypes', 'ApexTriggers', 'ValidationRules'];
       this.currentInfoLabel = message.infoLabel;
 
       if(!fixedInfos.includes(this.currentInfoLabel)){
@@ -97,31 +97,27 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
       //Start processing
       this.startProcessing();
-      try {
-        let result = await getSObjectMetadataInfo({
-          sObjectName: this.sObjectName,
-          infoType: this.currentInfoLabel
-        });
-        result = [...result];
-        result.sort(this.sortBy("label", 1))
-        //for 'FieldsAndRelationships' info
-        if(this.currentLabelIsFields){
-          result.sort(this.sortBy('isCustom', -1));
-          result = result.map((item) => ({ ...item, isStandard: !item.isCustom, buttonBrand: (item.isUnused) ? 'destructive' : 'brand' }));
-          this.customFieldsCount = result.reduce(
-            (accumulator, field) => accumulator + (field.isCustom ? 1 : 0),
-            0
-          );
-          this.standardFieldsCount = result.length - this.customFieldsCount;
-        }
-        this.recordsData = result;
-      } catch (error) {
-        console.log(
-          `Error occured when retrieving SObject fields. ::: ${JSON.stringify(
-            error
-          )}`
+      let result = await getSObjectMetadataInfo({
+        sObjectName: this.sObjectName,
+        infoType: this.currentInfoLabel
+      });
+      result =[...result];
+      result.sort(this.sortBy("label", 1))
+      //for 'FieldsAndRelationships' info
+      if(this.currentLabelIsFields){
+        result.sort(this.sortBy('isCustom', -1));
+        result = result.map((item) => ({ ...item, 
+                                         isStandard: !item.isCustom, 
+                                         buttonBrand: (item.isUnused) ? 'destructive' : 'brand', 
+                                         recordUrl: this.handleFieldViewMetadataUrl(item.isCustom, item.isCustom ? item.id : item.apiName )
+                                      }));
+        this.customFieldsCount = result.reduce(
+          (accumulator, field) => accumulator + (field.isCustom ? 1 : 0),
+          0
         );
+        this.standardFieldsCount = result.length - this.customFieldsCount;
       }
+      this.recordsData = result;
       //stop processing
       this.stopProcessing();
     }
@@ -161,6 +157,11 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     handleWhereIsThisUsed(id){
       window.open(`${this.getMetadataObjectManagerUrl(id)}/fieldDependencies`);
+    }
+
+    handleFieldViewMetadataUrl(isCustom, labelOrId){
+      //Flows will be handled differently than its name
+      return `${window.location.origin}/lightning/setup/ObjectManager/${this.sObjectIdOrName}/${this.currentInfoLabel}/${isCustom ? labelOrId.slice(0, -3) : labelOrId }/view`;
     }
 
     handleViewMetadataRecord(id){

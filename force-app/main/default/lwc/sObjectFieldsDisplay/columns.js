@@ -1,7 +1,17 @@
 const fieldColumns = [
     {
-        label: 'Label',
-        fieldName: 'label',
+        label: 'Label (as link)',
+        fieldName: 'recordUrl',
+        type: 'url',
+        typeAttributes: {
+            label: {
+                fieldName: 'label'
+            },
+            target: '_blank',
+            tooltip: {
+                fieldName: 'label'
+            }
+        },
         sortable: true,
         wrapText: true
     },
@@ -61,7 +71,6 @@ const layoutColumns = [
             variant: 'brand',
         },
         initialWidth: 100
-
     }
 ];
 
@@ -89,6 +98,41 @@ const recordTypeColumns = [
         sortable: true,
         type: 'boolean',
         initialWidth: 100
+    },
+    {
+        type: 'button',
+        typeAttributes: {
+            label: 'View',
+            name: 'view',
+            variant: 'brand',
+        },
+        initialWidth: 100
+    }
+];
+
+const validationRuleColumns = [
+    {
+        label: 'Rule Name',
+        fieldName: 'apiName',
+        sortable: true,
+        wrapText: true
+    },
+    {
+        label: 'Error Field',
+        fieldName: 'errorField',
+        wrapText: true,
+        sortable: true
+    },
+    {
+        label: 'Error Message',
+        fieldName: 'errorMessage',
+        wrapText: true
+    },
+    {
+        label: 'Is Active',
+        fieldName: 'isActive',
+        sortable: true,
+        type: 'boolean'
     },
     {
         type: 'button',
@@ -130,45 +174,13 @@ const apexTriggerColumns = [
     }
 ];
 
-const unusedColumns = [
-    {
-      label: "Label",
-      fieldName: "label",
-      wrapText: true,
-    },
-    {
-      label: "API Name",
-      fieldName: "apiName",
-    },
-    {
-      type: "button",
-      typeAttributes: {
-        label: "Where is this used?",
-        name: "where_is_this_used",
-        disabled: false,
-        variant: "brand-outline",
-      },
-      initialWidth: 170,
-    },
-    {
-      type: "button",
-      typeAttributes: {
-        label: 'Delete',
-        alternativeText: "Delete",
-        name: "delete",
-        disabled: false,
-        variant: "destructive",
-      },
-      initialWidth: 90,
-    },
-];
-
 const columnsByMetadataInfoMap = new Map();
 columnsByMetadataInfoMap.set('FieldsAndRelationships', [...fieldColumns]);
-columnsByMetadataInfoMap.set('FieldsAndRelationships.Unused', [...unusedColumns]);
 columnsByMetadataInfoMap.set('PageLayouts', [...layoutColumns]);
 columnsByMetadataInfoMap.set('RecordTypes', [...recordTypeColumns]);
+columnsByMetadataInfoMap.set('ValidationRules', [...validationRuleColumns]);
 columnsByMetadataInfoMap.set('ApexTriggers', [...apexTriggerColumns]);
 
 
 export { columnsByMetadataInfoMap };
+
