@@ -85,6 +85,8 @@ public with sharing class SObjectifyController {
             return objectInfo.getApexTriggers();
         } else if(infoType == VALIDATION_RULES_INFO) {
             return objectInfo.getValidationRules();
+        } else if(infoType == FLOWS_INFO){
+            return objectInfo.getFlows();
         }
         else {
             throw new IllegalArgumentException('Invalid infoType: ' + infoType);

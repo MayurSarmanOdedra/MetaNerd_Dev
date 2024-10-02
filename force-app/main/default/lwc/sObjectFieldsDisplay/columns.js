@@ -145,6 +145,56 @@ const validationRuleColumns = [
     }
 ];
 
+const flowColumns = [
+    {
+        label: 'Label (as link)',
+        fieldName: 'recordUrl',
+        type: 'url',
+        typeAttributes: {
+            label: {
+                fieldName: 'label'
+            },
+            target: '_blank',
+            tooltip: {
+                fieldName: 'label'
+            }
+        },
+        sortable: true,
+        wrapText: true
+    },
+    {
+        label: 'API Name',
+        fieldName: 'apiName',
+        sortable: true,
+        wrapText: true
+    },
+    {
+        label: 'Total Versions',
+        fieldName: 'totalVersions',
+        wrapText: true
+    },
+    {
+        label: 'Active Version Number',
+        fieldName: 'activeVersionNumber',
+        wrapText: true
+    },
+    {
+        label: 'Is Active?',
+        fieldName: 'isActive',
+        sortable: true,
+        type: 'boolean'
+    },
+    {
+        type: 'button',
+        typeAttributes: {
+            label: 'View Details',
+            name: 'view_details_and_versions',
+            variant: 'brand',
+        },
+        initialWidth: 130
+    }
+]
+
 const apexTriggerColumns = [
     {
         label: 'Label',
@@ -179,6 +229,7 @@ columnsByMetadataInfoMap.set('FieldsAndRelationships', [...fieldColumns]);
 columnsByMetadataInfoMap.set('PageLayouts', [...layoutColumns]);
 columnsByMetadataInfoMap.set('RecordTypes', [...recordTypeColumns]);
 columnsByMetadataInfoMap.set('ValidationRules', [...validationRuleColumns]);
+columnsByMetadataInfoMap.set('Flows', [...flowColumns]);
 columnsByMetadataInfoMap.set('ApexTriggers', [...apexTriggerColumns]);
 
 

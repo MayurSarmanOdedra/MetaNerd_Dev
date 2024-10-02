@@ -1,5 +1,4 @@
 import { LightningElement, wire } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { columnsByMetadataInfoMap } from "./columns";
 import getSObjectMetadataInfo from "@salesforce/apex/SObjectifyController.getSObjectMetadataInfo";
 import { 
@@ -42,6 +41,10 @@ export default class SObjectFieldsDisplay extends LightningElement {
       return this.currentInfoLabel === 'FieldsAndRelationships'
     }
 
+    get currentLabelIsFlows(){
+      return this.currentInfoLabel === 'Flows'
+    }
+
     get totalFields() {
       return Number(this.standardFieldsCount) + Number(this.customFieldsCount);
     }
@@ -81,20 +84,6 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     async handleInfoChangedMessage(message){
       this.resetData();
-      const fixedInfos = ['FieldsAndRelationships', 'PageLayouts', 'RecordTypes', 'ApexTriggers', 'ValidationRules'];
-      this.currentInfoLabel = message.infoLabel;
-
-      if(!fixedInfos.includes(this.currentInfoLabel)){
-        const event = new ShowToastEvent({
-          title: 'Info',
-          message:
-              `We are currently working to retrieve ${message.infoLabel} information and will provide it soon. Thank you for your patience!`,
-          mode: 'sticky'
-        });
-        this.dispatchEvent(event);
-        return;
-      }
-
       //Start processing
       this.startProcessing();
       let result = await getSObjectMetadataInfo({
@@ -116,6 +105,11 @@ export default class SObjectFieldsDisplay extends LightningElement {
           0
         );
         this.standardFieldsCount = result.length - this.customFieldsCount;
+      }else if(this.currentLabelIsFlows){
+        result = result.map((item) => ({
+          ...item,
+          recordUrl: this.handleFlowViewMetadataUrl(item.id, item.activeVersionId)
+        }))    
       }
       this.recordsData = result;
       //stop processing
@@ -144,6 +138,9 @@ export default class SObjectFieldsDisplay extends LightningElement {
         case 'view':
           this.handleViewMetadataRecord(row.id)
           break;
+        case 'view_details_and_versions':
+          this.handleViewDetailsAndVersion(row.id);
+          break;
         case 'where_is_this_used':
           this.handleWhereIsThisUsed(row.id); // This will be fields only for now
           break;
@@ -164,9 +161,17 @@ export default class SObjectFieldsDisplay extends LightningElement {
       return `${window.location.origin}/lightning/setup/ObjectManager/${this.sObjectIdOrName}/${this.currentInfoLabel}/${isCustom ? labelOrId.slice(0, -3) : labelOrId }/view`;
     }
 
-    handleViewMetadataRecord(id){
+    handleFlowViewMetadataUrl(id, activeVersionId){
       //Flows will be handled differently than its name
+      return `${window.location.origin}/builder_platform_interaction/flowBuilder.app?flowDefId=${id}&flowId=${activeVersionId}`;
+    }
+
+    handleViewMetadataRecord(id){
       window.open(`${this.getMetadataObjectManagerUrl(id)}/view`);
+    }
+
+    handleViewDetailsAndVersion(flowId){
+      window.open(`${window.location.origin}/lightning/setup/Flows/page?address=/${flowId}`);
     }
 
     getMetadataObjectManagerUrl(id){
