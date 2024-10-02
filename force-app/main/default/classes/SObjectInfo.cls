@@ -8,6 +8,7 @@ public inherited sharing class SObjectInfo {
     private List<LayoutInfo> thisLayoutInfo = new List<LayoutInfo>();
     private List<RecordTypeInfo> thisRecordTypeInfo = new List<RecordTypeInfo>();
     private List<ValidationRuleInfo> thisValidationRuleInfo = new List<ValidationRuleInfo>();
+    private List<FlowInfo> thisFlowInfo = new List<FlowInfo>();
     private List<TriggerInfo> thisTriggerInfo = new List<TriggerInfo>();
 
     private static final string CUSTOM_EXTENSION = '__c';
@@ -81,8 +82,8 @@ public inherited sharing class SObjectInfo {
 
     private integer getFlowsCount(){
         List<FlowDefinitionView> flows = [SELECT Id, ApiName 
-                                        from FlowDefinitionView 
-                                        where ProcessType IN :FLOW_PROCESS_TYPES 
+                                        FROM FlowDefinitionView 
+                                        WHERE ProcessType IN :FLOW_PROCESS_TYPES 
                                         AND TriggerObjectOrEventId != null 
                                         AND TriggerType IN :FLOW_TRIGGER_TYPES 
                                         AND TriggerObjectOrEvent.QualifiedApiName = :sObjectName];
@@ -226,7 +227,54 @@ public inherited sharing class SObjectInfo {
             system.debug(thisValidationRuleInfo);
         }
         return thisValidationRuleInfo;
-     }
+    }
+
+    public List<FlowInfo> getFlows(){
+        if(thisFlowInfo.isEmpty()){
+            Map<string, FlowInfo> flowInfoByDeveloperName = new Map<string, FlowInfo>();
+            for(FlowDefinitionView flow : [SELECT DurableId, 
+                                                  ApiName, 
+                                                  Label, 
+                                                  IsActive, 
+                                                  ActiveVersionId,
+                                                  VersionNumber
+                                            FROM FlowDefinitionView
+                                            WHERE TriggerObjectOrEvent.QualifiedApiName = :sObjectName
+                                            AND ProcessType IN :FLOW_PROCESS_TYPES
+                                            AND TriggerObjectOrEventId != null
+                                            AND TriggerType IN :FLOW_TRIGGER_TYPES]){
+                //add to map
+                flowInfoByDeveloperName.put(flow.ApiName, FlowInfo.builder(flow.DurableId, flow.ApiName, Flow.Label)
+                                                                  .setIsActive(flow.IsActive)
+                                                                  .setActiveVersionId(flow.ActiveVersionId)
+                                                                  .setActiveVersionNumber(flow.VersionNumber));
+                                
+            }
+
+            if(flowInfoByDeveloperName.size() > 0){
+                List<string> flowDeveloperNamesWithSingleQuotes = new List<string>();
+                //loop through flowInfoByDeveloperName keyset and call the stringtosinglequotes method and store resutls into new list
+                for(string flowString : flowInfoByDeveloperName.keySet()){
+                    flowDeveloperNamesWithSingleQuotes.add(stringWithSingleQuotes(flowString));
+                }
+                string query = 'SELECT COUNT(Id) flowCount, Definition.DeveloperName FROM Flow WHERE Definition.DeveloperName IN (' + String.join(flowDeveloperNamesWithSingleQuotes, ',') + ') GROUP BY Definition.DeveloperName';
+                System.debug('Fquery :: ' + query);
+                for(Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))){
+                    Map<String, Object> recMap = (Map<String, Object>)rec;
+                    //extract info
+                    integer totalVersions = (integer) recMap.get('flowCount');
+                    string flowDeveloperName = (string) recMap.get('DeveloperName');
+                    //modified FlowInfo within map
+                    flowInfoByDeveloperName.get(flowDeveloperName).setTotalVersions(totalVersions);
+                }
+            }
+            //set flowinfo for return
+            thisFlowInfo = flowInfoByDeveloperName.values();
+            //clear maps
+            flowInfoByDeveloperName.clear();
+        }
+        return thisFlowInfo;
+    }
 
     public List<TriggerInfo> getApexTriggers(){
         if(thisTriggerInfo.isEmpty()){
