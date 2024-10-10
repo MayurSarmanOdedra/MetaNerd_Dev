@@ -3,6 +3,33 @@
         <div slot="title">
             SObjectify Records Display
         </div>
+        <div slot="actions">
+            <lightning-layout>
+                <lightning-layout-item>
+                    <template lwc:if={showSearch}>
+                        <div onkeyup={handleKeyUp} class="slds-m-right_xx-small">
+                            <lightning-input
+                                name="enter-search"
+                                type="search"
+                                placeholder="search filter..."
+                                onchange={handleKeyUp}
+                                variant="label-hidden"
+                            ></lightning-input>
+                        </div>
+                    </template>
+                </lightning-layout-item>
+                <lightning-layout-item>
+                   <template lwc:if={recordsData}>
+                    <lightning-button-icon
+                        icon-name="utility:refresh"
+                        alternative-text="Refresh"
+                        title="Refresh"
+                        onclick={handleRecordsRefresh}
+                    ></lightning-button-icon>
+                   </template>
+                </lightning-layout-item>
+            </lightning-layout>
+        </div>
         <template lwc:if={recordsData}>
             <div class="slds-p-horizontal_medium slds-p-vertical_small">
                 <template lwc:if={totalFields}>

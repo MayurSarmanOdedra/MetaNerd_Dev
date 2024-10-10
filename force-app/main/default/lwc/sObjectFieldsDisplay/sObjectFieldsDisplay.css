@@ -30,3 +30,8 @@ div[slot='footer'] a {
 div[slot='footer'] a:hover {
     color: black;
 }
+
+.searchContainer {
+    width: 240px;
+    margin-right: 5px;
+}

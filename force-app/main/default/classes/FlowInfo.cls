@@ -8,6 +8,8 @@ public inherited sharing class FlowInfo extends MetadataInfo {
     public string activeVersionId { get; set; } 
     @AuraEnabled
     public integer activeVersionNumber { get; set; } 
+    @AuraEnabled
+    public List<id> inactiveVersionIds { get; set; }
 
     private FlowInfo(id id, string apiName, string label) {
         super(id, apiName, label);
@@ -34,6 +36,11 @@ public inherited sharing class FlowInfo extends MetadataInfo {
 
     public FlowInfo setActiveVersionNumber(integer activeVersionNumber){
         this.activeVersionNumber = activeVersionNumber;
+        return this;
+    }
+
+    public FlowInfo setInactiveFlowIds(List<id> inactiveVersionIds){
+        this.inactiveVersionIds = inactiveVersionIds;
         return this;
     }
 }

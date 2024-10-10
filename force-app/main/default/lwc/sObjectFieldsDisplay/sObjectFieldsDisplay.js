@@ -1,6 +1,13 @@
+//standard imports
 import { LightningElement, wire } from 'lwc';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+//custom imports
 import { columnsByMetadataInfoMap } from "./columns";
+import MyModal from 'c/sObjectFieldReferences';
+//controller methods
 import getSObjectMetadataInfo from "@salesforce/apex/SObjectifyController.getSObjectMetadataInfo";
+import deleteFlowVersions from '@salesforce/apex/SObjectifyController.deleteFlowVersions';
+//message channels
 import { 
     publish,
     subscribe,
@@ -11,13 +18,14 @@ import {
 import sObjectChanged from '@salesforce/messageChannel/selectedSObjectChanged__c';
 import selectedFieldId from "@salesforce/messageChannel/sObjectifyFieldReference__c";
 import infoChanged from "@salesforce/messageChannel/sObjectifyInfoChanged__c";
-import MyModal from 'c/sObjectFieldReferences';
 
+const SHOW_SEARCH_NUMBER = 1;
 export default class SObjectFieldsDisplay extends LightningElement {
     //Common variables
     sObjectIdOrName;
     sObjectName;
     recordsData;
+    allRecordsBeforeFilter;
     currentInfoLabel;
     sObjectChangedSubscription;
     infoChangedSubscription;
@@ -49,6 +57,11 @@ export default class SObjectFieldsDisplay extends LightningElement {
       return Number(this.standardFieldsCount) + Number(this.customFieldsCount);
     }
 
+    get showSearch(){
+      return (this.recordsData && this.recordsData.length > SHOW_SEARCH_NUMBER) 
+                || (this.allRecordsBeforeFilter && this.allRecordsBeforeFilter.length > SHOW_SEARCH_NUMBER);
+    }
+
     connectedCallback(){
       if (!this.sObjectChangedSubscription) {
           this.sObjectChangedSubscription = subscribe(
@@ -76,19 +89,37 @@ export default class SObjectFieldsDisplay extends LightningElement {
       this.processing = false;
     }
 
-    getCustomFieldIds() {
-      return this.recordsData
-        .filter(record => record.isCustom)
-        .map(record => record.id);
+    handleKeyUp(evt){
+      const isEnterKey = evt.keyCode === 13;
+      
+      if (isEnterKey && evt.target.value) {
+        let currentText = evt.target.value;
+        if(!this.allRecordsBeforeFilter){
+          this.allRecordsBeforeFilter = this.recordsData;
+        }
+        this.recordsData = this.recordsData.filter( item => item.label.toLowerCase().includes(currentText.toLowerCase()) || item.apiName.toLowerCase().includes(currentText.toLowerCase));
+      }else if(!evt.target.value && this.allRecordsBeforeFilter){
+        this.recordsData = this.allRecordsBeforeFilter;
+        this.allRecordsBeforeFilter = undefined;
+      }
     }
 
-    async handleInfoChangedMessage(message){
-      this.resetData();
+    handleInfoChangedMessage(message){
+      //set info label
+      this.currentInfoLabel = message.infoLabel;
+      //handle Records Fetch
+      this.handleRecordsFetch(false);
+    }
+
+    async handleRecordsFetch(isRefresh){
+      //reset data
+      this.resetData(false);
       //Start processing
       this.startProcessing();
       let result = await getSObjectMetadataInfo({
         sObjectName: this.sObjectName,
-        infoType: this.currentInfoLabel
+        infoType: this.currentInfoLabel,
+        isRefresh: isRefresh
       });
       result =[...result];
       result.sort(this.sortBy("label", 1))
@@ -117,15 +148,21 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     handleSObjectComboChange(message){
-        //Set variables
-        this.sObjectIdOrName = message.sObjectIdOrName;
-        this.sObjectName = message.sObjectAPIName;
-        this.resetData();
+      //Set variables
+      this.sObjectIdOrName = message.sObjectIdOrName;
+      this.sObjectName = message.sObjectAPIName;
+      this.resetData(true);
     }
 
-    resetData() {
-      this.currentInfoLabel = undefined;
+    handleRecordsRefresh(){
+      //call fetch records
+      this.handleRecordsFetch(true);
+    }
+
+    resetData(isHardReset) {
+      if(isHardReset) this.currentInfoLabel = undefined;
       this.recordsData = undefined;
+      this.allRecordsBeforeFilter = undefined;
       this.customFieldsCount = 0;
       this.standardFieldsCount = 0;
     }
@@ -147,6 +184,9 @@ export default class SObjectFieldsDisplay extends LightningElement {
         case 'view_references':
           this.handleViewReferences(row);
           break;
+        case 'delete_inactive_versions':
+          this.deleteFlowVersions(row);
+          break;
         default:
           break;
       } 
@@ -163,7 +203,8 @@ export default class SObjectFieldsDisplay extends LightningElement {
 
     handleFlowViewMetadataUrl(id, activeVersionId){
       //Flows will be handled differently than its name
-      return `${window.location.origin}/builder_platform_interaction/flowBuilder.app?flowDefId=${id}&flowId=${activeVersionId}`;
+      let prefix = `${window.location.origin}/builder_platform_interaction/flowBuilder.app?flowDefId=${id}`;
+      return activeVersionId ? `${prefix}&flowId=${activeVersionId}` : prefix;
     }
 
     handleViewMetadataRecord(id){
@@ -178,6 +219,48 @@ export default class SObjectFieldsDisplay extends LightningElement {
       return `${window.location.origin}/lightning/setup/ObjectManager/${this.sObjectIdOrName}/${this.currentInfoLabel}/${id.slice(0, -3)}`;
     }
 
+    async deleteFlowVersions(row){
+      if(row.totalVersions > 1 && row.isActive){
+        //start processing
+        this.startProcessing();
+        let res = await deleteFlowVersions({
+            flowIds: row.inactiveVersionIds
+        });
+
+        if(res){
+          //update row
+          const rowIndex = this.recordsData.findIndex((item) => item.id === row.id)
+          const cloneData = [...this.recordsData];
+          cloneData.splice(rowIndex, 1, { ...row, totalVersions: 1 });
+          this.recordsData = cloneData;
+          const event = new ShowToastEvent({
+            title: 'SUCCESS',
+            message: 'Flow versions deleted successfully!',
+            mode: 'sticky',
+            variant: 'success'
+          });
+          this.dispatchEvent(event);
+        }else {
+          const event = new ShowToastEvent({
+            title: 'ERROR',
+            message: 'Something went wrong!',
+            mode: 'sticky',
+            variant: 'error'
+          });
+          this.dispatchEvent(event);
+        }
+        //stop processing
+        this.stopProcessing();
+      }else {
+        const event = new ShowToastEvent({
+          title: 'Info',
+          message: 'Cannot delete single inactive/active flows!',
+          mode: 'sticky'
+        });
+        this.dispatchEvent(event);
+      }
+    }
+
     handleViewReferences(row){
       MyModal.open({
           // `label` is not included here in this example.
@@ -190,10 +273,10 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     disconnectedCallback(){
-        unsubscribe(this.sObjectChangedSubscription);
-        unsubscribe(this.infoChangedSubscription);
-        this.sObjectChangedSubscription = null;
-        this.infoChangedSubscription = null;
+      unsubscribe(this.sObjectChangedSubscription);
+      unsubscribe(this.infoChangedSubscription);
+      this.sObjectChangedSubscription = null;
+      this.infoChangedSubscription = null;
     }
 
     onHandleSort(event) {
@@ -207,18 +290,18 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     sortBy(field, reverse, primer) {
-        const key = primer
-            ? function (x) {
-                return primer(x[field]);
-            }
-            : function (x) {
-                return x[field];
-            };
+      const key = primer
+          ? function (x) {
+              return primer(x[field]);
+          }
+          : function (x) {
+              return x[field];
+          };
 
-        return function (a, b) {
-            a = key(a);
-            b = key(b);
-            return reverse * ((a > b) - (b > a));
-        };
+      return function (a, b) {
+          a = key(a);
+          b = key(b);
+          return reverse * ((a > b) - (b > a));
+      };
     }
 }

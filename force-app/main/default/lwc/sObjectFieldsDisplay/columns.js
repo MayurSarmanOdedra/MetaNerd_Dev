@@ -174,7 +174,7 @@ const flowColumns = [
         wrapText: true
     },
     {
-        label: 'Active Version Number',
+        label: 'Active/Latest Version Number',
         fieldName: 'activeVersionNumber',
         wrapText: true
     },
@@ -185,13 +185,19 @@ const flowColumns = [
         type: 'boolean'
     },
     {
-        type: 'button',
+        type: 'action',
         typeAttributes: {
-            label: 'View Details',
-            name: 'view_details_and_versions',
-            variant: 'brand',
-        },
-        initialWidth: 130
+            rowActions: [
+                {
+                    label: 'View Details and Versions',
+                    name: 'view_details_and_versions'
+                },
+                {
+                    label: 'Delete Inactive Versions',
+                    name: 'delete_inactive_versions'
+                }
+            ]
+        }
     }
 ]
 

@@ -70,23 +70,23 @@ public with sharing class SObjectifyController {
         return objectInfo.getCustomObjectId();
     }
 
-    @AuraEnabled(cacheable=true)
-    public static List<Object> getSObjectMetadataInfo(String sObjectName, String infoType) {
+    @AuraEnabled(cacheable=false)
+    public static List<Object> getSObjectMetadataInfo(String sObjectName, String infoType, boolean isRefresh) {
         SObjectInfo objectInfo = SObjectInfo.getInstance(sObjectName);
         
         // Determine what type of info to return based on the infoType string
         if (infoType == FIELDS_AND_RELATIONSHIPS_INFO) {
-            return objectInfo.getFields();
+            return objectInfo.getFields(isRefresh);
         } else if (infoType == PAGE_LAYOUTS_INFO) {
-            return objectInfo.getLayouts();
+            return objectInfo.getLayouts(isRefresh);
         } else if (infoType == RECORD_TYPES_INFO) {
-            return objectInfo.getRecordTypes();
+            return objectInfo.getRecordTypes(isRefresh);
         } else if (infoType == APEX_TRIGGERS_INFO) {
-            return objectInfo.getApexTriggers();
+            return objectInfo.getApexTriggers(isRefresh);
         } else if(infoType == VALIDATION_RULES_INFO) {
-            return objectInfo.getValidationRules();
+            return objectInfo.getValidationRules(isRefresh);
         } else if(infoType == FLOWS_INFO){
-            return objectInfo.getFlows();
+            return objectInfo.getFlows(isRefresh);
         }
         else {
             throw new IllegalArgumentException('Invalid infoType: ' + infoType);
@@ -101,5 +101,19 @@ public with sharing class SObjectifyController {
         }
         return fieldRefs;
     }
-}
 
+    @AuraEnabled
+    public static boolean deleteFlowVersions(List<id> flowIds){
+        Boolean isSuccess = true;
+        try {
+            for(id flowId : flowIds){
+                HttpResponse res = ToolingAPIUtility.flowDeleteQuery(flowId);
+                isSuccess = res.getStatusCode() == 204;
+            }
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+
+        return isSuccess;
+    }
+}
