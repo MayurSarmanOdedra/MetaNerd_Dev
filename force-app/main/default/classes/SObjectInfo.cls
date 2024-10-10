@@ -12,6 +12,7 @@ public inherited sharing class SObjectInfo {
     private List<TriggerInfo> thisTriggerInfo = new List<TriggerInfo>();
 
     private static final string CUSTOM_EXTENSION = '__c';
+    private static final string ACTIVE_STATUS = 'Active';
     private static final list<string> FLOW_PROCESS_TYPES = new list<string>{ 'AutoLaunchedFlow','CheckoutFlow','Flow' };
     private static final list<string> FLOW_TRIGGER_TYPES = new list<string>{ 'RecordBeforeSave', 'RecordAfterSave', 'RecordBeforeDelete' };
 
@@ -105,8 +106,8 @@ public inherited sharing class SObjectInfo {
         return totalCount;
     }
 
-    public List<FieldInfo> getFields(){
-        if(thisFieldInfo.isEmpty()){
+    public List<FieldInfo> getFields(boolean isRefresh){
+        if(thisFieldInfo.isEmpty() || isRefresh){
             Map<String, FieldInfo> fieldMapByDeveloperName = new Map<String, FieldInfo>();
             List<string> customFieldIds = new List<string>();
             
@@ -179,8 +180,8 @@ public inherited sharing class SObjectInfo {
         }
     }
 
-    public List<LayoutInfo> getLayouts(){
-        if(thisLayoutInfo.isEmpty()){
+    public List<LayoutInfo> getLayouts(boolean isRefresh){
+        if(thisLayoutInfo.isEmpty() || isRefresh){
             //Query the layouts using tooling api
             String query = 'SELECT Id, Name, LayoutType FROM Layout WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
             for(Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))){
@@ -196,8 +197,8 @@ public inherited sharing class SObjectInfo {
         return thisLayoutInfo;
     }
 
-    public List<RecordTypeInfo> getRecordTypes(){
-        if(thisRecordTypeInfo.isEmpty()){
+    public List<RecordTypeInfo> getRecordTypes(boolean isRefresh){
+        if(thisRecordTypeInfo.isEmpty() || isRefresh){
             for(RecordType record : [SELECT Id,Name,DeveloperName,Description,IsActive FROM RecordType WHERE SobjectType = :sObjectName]){
                 thisRecordTypeInfo.add(RecordTypeInfo.builder(record.Id, record.DeveloperName, record.Name)
                                             .setIsActive(record.IsActive)
@@ -207,8 +208,8 @@ public inherited sharing class SObjectInfo {
         return thisRecordTypeInfo;
     }
 
-    public List<ValidationRuleInfo> getValidationRules(){
-        if(thisValidationRuleInfo.isEmpty()){
+    public List<ValidationRuleInfo> getValidationRules(boolean isRefresh){
+        if(thisValidationRuleInfo.isEmpty() || isRefresh){
             string query = 'SELECT Id, ValidationName, ErrorMessage, ErrorDisplayField, Active FROM ValidationRule WHERE EntityDefinition.QualifiedApiName = ' + stringWithSingleQuotes(sObjectName);
             for(Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))){
                 Map<String, Object> recMap = (Map<String, Object>)rec;
@@ -229,8 +230,8 @@ public inherited sharing class SObjectInfo {
         return thisValidationRuleInfo;
     }
 
-    public List<FlowInfo> getFlows(){
-        if(thisFlowInfo.isEmpty()){
+    public List<FlowInfo> getFlows(boolean isRefresh){
+        if(thisFlowInfo.isEmpty() || isRefresh){
             Map<string, FlowInfo> flowInfoByDeveloperName = new Map<string, FlowInfo>();
             for(FlowDefinitionView flow : [SELECT DurableId, 
                                                   ApiName, 
@@ -257,27 +258,60 @@ public inherited sharing class SObjectInfo {
                 for(string flowString : flowInfoByDeveloperName.keySet()){
                     flowDeveloperNamesWithSingleQuotes.add(stringWithSingleQuotes(flowString));
                 }
-                string query = 'SELECT COUNT(Id) flowCount, Definition.DeveloperName FROM Flow WHERE Definition.DeveloperName IN (' + String.join(flowDeveloperNamesWithSingleQuotes, ',') + ') GROUP BY Definition.DeveloperName';
+                string query = 'SELECT Id, Definition.DeveloperName, Status FROM Flow WHERE Definition.DeveloperName IN (' + String.join(flowDeveloperNamesWithSingleQuotes, ',') + ') GROUP BY Id,Definition.DeveloperName,Status';
                 System.debug('Fquery :: ' + query);
+                Map<string, integer> flowVersionsCountByApiName = new Map<string, integer>();
+                Map<string, List<id>> flowInactiveIdsByApiName = new Map<string, List<id>>();
                 for(Object rec : getToolingResponseRecords(ToolingAPIUtility.queryToolingAPI(query))){
                     Map<String, Object> recMap = (Map<String, Object>)rec;
                     //extract info
-                    integer totalVersions = (integer) recMap.get('flowCount');
+                    id flowId = (id) recMap.get('Id');
                     string flowDeveloperName = (string) recMap.get('DeveloperName');
-                    //modified FlowInfo within map
-                    flowInfoByDeveloperName.get(flowDeveloperName).setTotalVersions(totalVersions);
+                    string flowStatus = (string) recMap.get('Status');
+                    //set count
+                    if(flowVersionsCountByApiName.containsKey(flowDeveloperName)){
+                        integer currentCount = flowVersionsCountByApiName.get(flowDeveloperName);
+                        currentCount++;
+                        flowVersionsCountByApiName.put(flowDeveloperName, currentCount);
+                    } else {
+                        flowVersionsCountByApiName.put(flowDeveloperName, 1);
+                    }
+                    //set inactive ids
+                    if(flowStatus != ACTIVE_STATUS){
+                        if(flowInactiveIdsByApiName.containsKey(flowDeveloperName)){
+                            List<id> currentInactiveIds = flowInactiveIdsByApiName.get(flowDeveloperName);
+                            currentInactiveIds.add(flowId);
+                            flowInactiveIdsByApiName.put(flowDeveloperName, currentInactiveIds);
+                        } else {
+                            flowInactiveIdsByApiName.put(flowDeveloperName, new List<string>{ flowId });
+
+                        }
+                    }
                 }
+                for(string apiName : flowVersionsCountByApiName.keySet()){
+                    if(flowInfoByDeveloperName.containsKey(apiName)){
+                        FlowInfo flowInfo = flowInfoByDeveloperName.get(apiName);
+                        //set flowInfo totalVersions
+                        flowInfo.setTotalVersions(flowVersionsCountByApiName.get(apiName));
+                        //set flowInfo inactiveFlowIds
+                        flowInfo.setInactiveFlowIds(flowInactiveIdsByApiName.containsKey(apiName) 
+                                                        ? flowInactiveIdsByApiName.get(apiName) 
+                                                        : new List<string>());
+                    }
+                }
+                //set flowinfo for return
+                thisFlowInfo = flowInfoByDeveloperName.values();
+                //clear maps
+                flowVersionsCountByApiName.clear();
+                flowInactiveIdsByApiName.clear();
+                flowInfoByDeveloperName.clear();
             }
-            //set flowinfo for return
-            thisFlowInfo = flowInfoByDeveloperName.values();
-            //clear maps
-            flowInfoByDeveloperName.clear();
         }
         return thisFlowInfo;
     }
 
-    public List<TriggerInfo> getApexTriggers(){
-        if(thisTriggerInfo.isEmpty()){
+    public List<TriggerInfo> getApexTriggers(boolean isRefresh){
+        if(thisTriggerInfo.isEmpty() || isRefresh){
             for(ApexTrigger t : [SELECT Id, 
                                     Name, 
                                     Status, 
