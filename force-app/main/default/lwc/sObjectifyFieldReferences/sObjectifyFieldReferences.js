@@ -7,6 +7,7 @@ import {
 } from "lightning/messageService";
 import LightningModal from 'lightning/modal';
 import getFieldReferences from "@salesforce/apex/SObjectifyController.getFieldReferences";
+import getRecordsWithFieldPopulated from "@salesforce/apex/SObjectifyController.getRecordsWithFieldPopulated";
 import selectedFieldId from "@salesforce/messageChannel/sObjectifyFieldReference__c";
 
 const columns = [
@@ -36,9 +37,12 @@ export default class SObjectFieldReferences extends LightningModal {
   fieldReferences;
   columns = columns;
   unUsedField = false;
+  processing = false;
   selectedFieldLabel;
   selectedFieldAPIName;
   selectedSObjectId;
+  selectedSObjectApiName;
+  totalRecords = 0;
 
   selectedFieldIdSubscription;
 
@@ -62,9 +66,13 @@ export default class SObjectFieldReferences extends LightningModal {
 
   // Handler for message received by component
   async handleFieldSelectMessage(message) {
+    //start processing
+    this.processing = true;
+    //set local variables
     this.selectedFieldLabel = message.selectedFieldLabel;
     this.selectedFieldAPIName = message.selectedFieldAPIName;
     this.selectedSObjectId = message.selectedSObjectId;
+    this.selectedSObjectApiName = message.selectedSObjectApiName;
     
     try {
       let result = await getFieldReferences({
@@ -73,6 +81,10 @@ export default class SObjectFieldReferences extends LightningModal {
       if (result.length > 0) this.fieldReferences = result;
       else {
         this.fieldReferences = undefined;
+        this.totalRecords = await getRecordsWithFieldPopulated({
+          objectApiName: this.selectedSObjectApiName,
+          fieldApiName: this.selectedFieldAPIName
+        });
         this.unUsedField = true;
       }
       this.fieldId = message.selectedFieldId;
@@ -83,6 +95,9 @@ export default class SObjectFieldReferences extends LightningModal {
         )}`
       );
     }
+    
+    //stop processing
+    this.processing = false;
   }
 
   handleWhereIsThisUsedClick(){
