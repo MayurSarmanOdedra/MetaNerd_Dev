@@ -268,7 +268,7 @@ export default class SObjectFieldsDisplay extends LightningElement {
           size: 'medium',
           description: 'Modal for field references'
       });
-      const payload = { selectedFieldAPIName: row.apiName, selectedFieldLabel: row.label, selectedFieldId: row.id, selectedSObjectId: this.sObjectIdOrName };
+      const payload = { selectedFieldAPIName: row.apiName, selectedFieldLabel: row.label, selectedFieldId: row.id, selectedSObjectId: this.sObjectIdOrName, selectedSObjectApiName: this.sObjectName };
       publish(this.messageContext, selectedFieldId, payload);
     }
 

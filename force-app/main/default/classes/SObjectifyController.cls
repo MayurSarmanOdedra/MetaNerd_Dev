@@ -116,4 +116,21 @@ public with sharing class SObjectifyController {
 
         return isSuccess;
     }
+
+    @AuraEnabled
+    public static integer getRecordsWithFieldPopulated(string objectApiName, string fieldApiName){
+        try {
+            string query = 'SELECT COUNT() FROM ' + string.escapeSingleQuotes(objectApiName) + ' WHERE ' + string.escapeSingleQuotes(fieldApiName) + ' != NULL';
+            system.debug(query);
+            integer returnValue =  Database.countQuery(query);
+            system.debug('returnValue => ' + returnValue);
+            return returnValue;
+        } catch (IllegalArgumentException illEx) {
+            throw new AuraHandledException(illEx.getMessage());
+        } catch (QueryException queryEx){
+            throw new AuraHandledException(queryEx.getMessage());
+        } catch (Exception e){
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }

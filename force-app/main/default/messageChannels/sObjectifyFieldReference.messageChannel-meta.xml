@@ -12,6 +12,10 @@
         <fieldName>selectedSObjectId</fieldName>
     </lightningMessageFields>
     <lightningMessageFields>
+        <description>The api name of the selected sobject</description>
+        <fieldName>selectedSObjectApiName</fieldName>
+    </lightningMessageFields>
+    <lightningMessageFields>
         <description>The label of the selected field</description>
         <fieldName>selectedFieldLabel</fieldName>
     </lightningMessageFields>
