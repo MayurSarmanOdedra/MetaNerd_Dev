@@ -3,7 +3,7 @@ import { LightningElement, wire } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 //custom imports
 import { columnsByMetadataInfoMap } from "./columns";
-import MyModal from 'c/sObjectFieldReferences';
+import MyModal from 'c/sObjectifyFieldReferences';
 //controller methods
 import getSObjectMetadataInfo from "@salesforce/apex/SObjectifyController.getSObjectMetadataInfo";
 import deleteFlowVersions from '@salesforce/apex/SObjectifyController.deleteFlowVersions';
@@ -43,6 +43,10 @@ export default class SObjectFieldsDisplay extends LightningElement {
     //Get Columns
     get columns() {
       return columnsByMetadataInfoMap.get(this.currentInfoLabel);
+    }
+
+    get showComponent(){
+      return this.currentInfoLabel;
     }
 
     get currentLabelIsFields(){
@@ -148,10 +152,11 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     handleSObjectComboChange(message){
+      //reset data
+      this.resetData(true);
       //Set variables
       this.sObjectIdOrName = message.sObjectIdOrName;
       this.sObjectName = message.sObjectAPIName;
-      this.resetData(true);
     }
 
     handleRecordsRefresh(){
@@ -160,7 +165,9 @@ export default class SObjectFieldsDisplay extends LightningElement {
     }
 
     resetData(isHardReset) {
-      if(isHardReset) this.currentInfoLabel = undefined;
+      if(isHardReset){
+        this.currentInfoLabel = undefined;
+      } 
       this.recordsData = undefined;
       this.allRecordsBeforeFilter = undefined;
       this.customFieldsCount = 0;

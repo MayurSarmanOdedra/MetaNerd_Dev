@@ -1,7 +1,7 @@
 <template>
     <lightning-card icon-name="utility:data_transforms" variant="base">
       <div slot="title">
-          SObjectify Field References
+          Field References
       </div>
       <div slot="actions">
         <lightning-button label="Where is this used?" variant="brand-outline" onclick={handleWhereIsThisUsedClick}></lightning-button>
@@ -35,7 +35,7 @@
           </div>
           <div class="slds-align_absolute-center">
             <p class="slds-text-heading_small slds-p-around_small">
-              This field is possibly unused. There are {totalRecords} record(s) where this field is populated. Please review its relevance and remove it if unnecessary to avoid exceeding field limits.
+              This field is possibly unused. There are <span class={unusedFieldsRecordsClass}>{totalRecords} record(s)</span> where this field is populated. Please review its relevance and remove it if unnecessary to avoid exceeding field limits.
             </p>
           </div>
           <div class="slds-align_absolute-center">
