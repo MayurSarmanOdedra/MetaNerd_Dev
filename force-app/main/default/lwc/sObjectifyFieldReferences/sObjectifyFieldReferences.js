@@ -43,6 +43,7 @@ export default class SObjectFieldReferences extends LightningModal {
   selectedSObjectId;
   selectedSObjectApiName;
   totalRecords = 0;
+  unusedFieldsRecordsClass = 'noRecordsForUnusedFields'
 
   selectedFieldIdSubscription;
 
@@ -85,6 +86,7 @@ export default class SObjectFieldReferences extends LightningModal {
           objectApiName: this.selectedSObjectApiName,
           fieldApiName: this.selectedFieldAPIName
         });
+        if(this.totalRecords > 0) this.unusedFieldsRecordsClass = 'recordsForUnusedFields';
         this.unUsedField = true;
       }
       this.fieldId = message.selectedFieldId;

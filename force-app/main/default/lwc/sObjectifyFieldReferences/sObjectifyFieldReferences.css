@@ -19,3 +19,13 @@ div[slot='footer'] a:hover {
 	background-color: #F1F1F1;
 	border-color: #F1F1F1;
 }
+
+.noRecordsForUnusedFields {
+    color: #0176D3;
+    font-weight: bold;
+}
+
+.recordsForUnusedFields {
+    color: #8E030F;
+    font-weight: bold;
+}

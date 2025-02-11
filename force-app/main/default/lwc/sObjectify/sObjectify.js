@@ -55,6 +55,9 @@ export default class SObjectify extends LightningElement {
     //Start processing
     this.processing = true;
 
+    //remove info current target
+    if(this.currTarget) this.currTarget.classList.remove('selected-info');
+
     this.selectedSObject = event.detail.value;
     this.selectedSObjectLabel = event.target.options.find(opt => opt.value === event.detail.value).label.split(' - ')[0];
 
